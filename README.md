@@ -1,6 +1,8 @@
 # GoSteps
 
-GoSteps is a go library that helps in running functions as steps and reminds you to step out and get active (kidding!). The idea behind `gosteps` is to define set of functions as steps and execute them in a sequential fashion by piping output (other than error) from previous step, as arguments, into the next steps (not necessarily using the args).
+GoSteps is a go library that helps in running functions as steps and reminds you to step out and get active (kidding!). 
+
+The idea behind `gosteps` is to define set of functions as steps and execute them in a sequential fashion by piping output (other than error) from previous step, as arguments, into the next steps (not necessarily using the args).
 
 ## Usage
 
@@ -30,7 +32,7 @@ type Step struct {
 | StrictErrorCheck | If set to `true` exact error is matched, else only presence of error is checked                              |
 | SkipRetry        | If set to `true` step is not retried for any error                                                           |
 
-## Defining Steps
+### Defining Steps
 
 To define steps, use the `gosteps.Steps` type and link the next steps in the `NextSteps` field as follows
 
@@ -53,7 +55,7 @@ var steps = gosteps.Steps{
 
 Here the first step is `Add` and next step (and final) is `Sub`, so the output of Add is piped to Sub and that gives the final output.
 
-## Contditional Steps
+### Contditional Steps
 
 Some steps might have multiple candidates for next step and the executable next step is to be picked based on the output of the current step. To do so, steps with multiple next step candidates must use the `NextStepResolver` field passing a resolver function that returns the Name of the function to use as next step.
 
@@ -71,7 +73,7 @@ func nextStepResolver(args ...any) string {
 }
 ```
 
-## Executing Steps
+### Executing Steps
 
 To execute steps use the `Execute(initArgs ...any)` method, passing the (optional) initializing arguments.
 
@@ -92,7 +94,7 @@ func main() {
 }
 ```
 
-## Retrying for Error
+### Retrying for Error
 
 To retry a step for particular erors, use the `ErrorsToRetry` field passing the list of errors. To make sure the error matches exactly as that of the Errors to retry, pass `true` for the `StrictErrorCheck` field, otherwise only error-substring presense will be checked.
 
