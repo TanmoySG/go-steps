@@ -115,7 +115,7 @@ To skip retry on error pass `true` to the `SkipRetry` field.
 
 In [this example](./example/main.go), we've used a set of complex steps with conditional step and retry. The flow of the same is
 
-![flow](diag.png)
+![flow](./example/diag.png)
 
 Execute the example steps
 
