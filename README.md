@@ -10,14 +10,14 @@ The `Step` type contains the requirments to execute a step function and move to 
 
 ```go
 type Step struct {
- Name             StepName
- Function         interface{}
- AdditionalArgs   []interface{}
- NextSteps        []Step
- NextStepResolver interface{}
- ErrorsToRetry    []error
- StrictErrorCheck bool
- SkipRetry        bool
+	Name             StepName
+	Function         interface{}
+	AdditionalArgs   []interface{}
+	NextSteps        []Step
+	NextStepResolver interface{}
+	ErrorsToRetry    []error
+	StrictErrorCheck bool
+	SkipRetry        bool
 }
 ```
 
@@ -38,24 +38,24 @@ To define steps, use the `gosteps.Steps` type and link the next steps in the `Ne
 
 ```go
 var steps = gosteps.Steps{
- {
-  Name: "add",
-  Function: funcs.Add,
-  AdditionalArgs: []interface{}{2, 3},
-  NextSteps: gosteps.Steps{
-   {
-    Name: "sub",
-    Function:       funcs.Sub,
-    AdditionalArgs: []interface{}{4},
-   },
-  },
- },
+	{
+		Name: "add",
+		Function: funcs.Add,
+		AdditionalArgs: []interface{}{2, 3},
+		NextSteps: gosteps.Steps{
+			{
+				Name: "sub",
+				Function:       funcs.Sub,
+				AdditionalArgs: []interface{}{4},
+			},
+		},
+	},
 }
 ```
 
 Here the first step is `Add` and next step (and final) is `Sub`, so the output of Add is piped to Sub and that gives the final output.
 
-### Contditional Steps
+### Conditional Steps
 
 Some steps might have multiple candidates for next step and the executable next step is to be picked based on the output of the current step. To do so, steps with multiple next step candidates must use the `NextStepResolver` field passing a resolver function that returns the Name of the function to use as next step.
 
@@ -63,13 +63,13 @@ The resolver function should be of type `func(args ...any) string`, where `args`
 
 ```go
 func nextStepResolver(args ...any) string {
- if args[0].(int) < 5 {
-  fmt.Printf("StepResolver [%v]: Arguments is Negative, going with Multiply\n", args)
-  return "add"
- }
+	if args[0].(int) < 5 {
+		fmt.Printf("StepResolver [%v]: Arguments is Negative, going with Multiply\n", args)
+		return "add"
+	}
 
- fmt.Printf("StepResolver [%v]: Arguments is Positive, going with Divide\n", args)
- return "sub"
+	fmt.Printf("StepResolver [%v]: Arguments is Positive, going with Divide\n", args)
+	return "sub"
 }
 ```
 
@@ -79,18 +79,18 @@ To execute steps use the `Execute(initArgs ...any)` method, passing the (optiona
 
 ```go
 import (
- gosteps "github.com/TanmoySG/go-steps"
- "github.com/TanmoySG/go-steps/example/funcs"
+	gosteps "github.com/TanmoySG/go-steps"
+	funcs "github.com/TanmoySG/go-steps/example/funcs"
 )
 
 func main() {
- initArgs := []interface{}{1, 2}
- finalOutput, err := steps.Execute(initArgs...)
- if err != nil {
-  fmt.Printf("error executing steps: %s, final output: [%s]\n", err, finalOutput)
- }
+	initArgs := []interface{}{1, 2}
+	finalOutput, err := steps.Execute(initArgs...)
+	if err != nil {
+		fmt.Printf("error executing steps: %s, final output: [%s]\n", err, finalOutput)
+	}
 
- fmt.Printf("Final Output: [%v]\n", finalOutput)
+	fmt.Printf("Final Output: [%v]\n", finalOutput)
 }
 ```
 
@@ -99,10 +99,12 @@ func main() {
 To retry a step for particular erors, use the `ErrorsToRetry` field passing the list of errors. To make sure the error matches exactly as that of the Errors to retry, pass `true` for the `StrictErrorCheck` field, otherwise only error-substring presense will be checked.
 
 ```go
-ErrorsToRetry: []error{
-    fmt.Errorf("error to retry"),
-},
-StrictErrorCheck: true
+{
+	ErrorsToRetry: []error{
+		fmt.Errorf("error to retry"),
+	},
+	StrictErrorCheck: true,
+}
 ```
 
 To skip retry on error pass `true` to the `SkipRetry` field.
@@ -133,3 +135,21 @@ Running fake error function for arg [[105]]
 Multiply [3150 5250]
 Final Output: [[16537500]]
 ```
+
+## Constraints
+
+To keep the step execution same, all step functions must be of type `func(args ..any) ([]interface{}, error)` 
+
+Here all arguments passed to the step function need to be type asserted within the step function, as
+
+```go
+func Multiply(args ...any) ([]interface{}, error) {
+	return []interface{}{args[0].(int) * args[1].(int)}, nil
+}
+```
+
+The step function must also return all parameters (other than error) as type `[]interface{ret1, ret2, ...}` and error must be returned for all functions even if nil.
+
+### Help Wanted!
+
+If you want to help fix the above constraint or other bugs/issues, feel free to raise an Issue or Pull Request with the changes. It'd be an immense help!
