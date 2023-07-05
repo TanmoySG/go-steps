@@ -8,7 +8,7 @@ GoSteps is a go library that helps in running functions as steps and reminds you
  <img src="https://codetips.dev/wp-content/uploads/2022/08/gopher-go-run.jpg" alt="Sublime's custom image" width="300" height="300" />
 </p>
 
-The idea behind `gosteps` is to define set of functions as steps and execute them in a sequential fashion by piping output (other than error) from previous step, as arguments, into the next steps (not necessarily using the args).
+The idea behind `gosteps` is to define set of functions as steps-chain (kind of a linked list) and execute them in a sequential fashion by piping output (other than error) from previous step, as arguments, into the next steps (not necessarily using the args).
 
 ## Usage
 
