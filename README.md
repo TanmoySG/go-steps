@@ -58,6 +58,7 @@ Here the first step is `Add` and next step (and final) is `Sub`, so the output o
 Some steps might have multiple candidates for next step and the executable next step is to be picked based on the output of the current step. To do so, steps with multiple next step candidates must use the `NextStepResolver` field passing a resolver function that returns the Name of the function to use as next step.
 
 The resolver function should be of type `func(args ...any) string`, where `args` are the output of current step and returned string is the name of the step to use.
+
 ```go
 func nextStepResolver(args ...any) string {
  if args[0].(int) < 5 {
@@ -110,11 +111,11 @@ To skip retry on error pass `true` to the `SkipRetry` field.
 
 In [this example](./example/main.go), we've used a set of complex steps with conditional step and retry. The flow of the same is
 
-![](diag.png)
+![flow](diag.png)
 
 Execute the example steps
 
-```
+```sh
 go run example/main.go
 
 // output
