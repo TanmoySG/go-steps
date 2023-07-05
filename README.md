@@ -117,6 +117,24 @@ To skip retry on error pass `true` to the `SkipRetry` field.
 
 **IMPORTANT:** There is no maximum retry for error, so if any error is encountered that is to be retried, it'll be retried till the error goes away and can lead to an infinite execution of the step. Please retry cautiously. Maximum retry parameter will be added soon.
 
+## Constraints
+
+To keep the step execution same, all step functions must be of type `func(args ..any) ([]interface{}, error)`
+
+Here all arguments passed to the step function need to be type asserted within the step function, as
+
+```go
+func Multiply(args ...any) ([]interface{}, error) {
+ return []interface{}{args[0].(int) * args[1].(int)}, nil
+}
+```
+
+The step function must also return all parameters (other than error) as type `[]interface{ret1, ret2, ...}` and error must be returned for all functions even if nil.
+
+### Help Wanted
+
+If you want to help fix the above constraint or other bugs/issues, feel free to raise an Issue or Pull Request with the changes. It'd be an immense help!
+
 ## Example
 
 In [this example](./example/main.go), we've used a set of complex steps with conditional step and retry. The flow of the same is
@@ -141,21 +159,3 @@ Running fake error function for arg [[105]]
 Multiply [3150 5250]
 Final Output: [[16537500]]
 ```
-
-## Constraints
-
-To keep the step execution same, all step functions must be of type `func(args ..any) ([]interface{}, error)` 
-
-Here all arguments passed to the step function need to be type asserted within the step function, as
-
-```go
-func Multiply(args ...any) ([]interface{}, error) {
-	return []interface{}{args[0].(int) * args[1].(int)}, nil
-}
-```
-
-The step function must also return all parameters (other than error) as type `[]interface{ret1, ret2, ...}` and error must be returned for all functions even if nil.
-
-### Help Wanted!
-
-If you want to help fix the above constraint or other bugs/issues, feel free to raise an Issue or Pull Request with the changes. It'd be an immense help!
