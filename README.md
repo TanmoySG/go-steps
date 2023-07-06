@@ -27,16 +27,18 @@ type Step struct {
 }
 ```
 
-| Field            | Description                                                                                                  |
-|------------------|--------------------------------------------------------------------------------------------------------------|
-| Name             | Name of step                                                                                                 |
-| Function         | The function to execute                                                                                      |
-| AdditionalArgs   | any additional arguments need to pass to te step                                                             |
-| NextSteps        | Candidate functions for next step (multiple next steps in-case of condition based execution)                 |
-| NextStepResolver | A function that returns the step name, based on conditions, that is used to pick the nextStep from NextSteps |
-| ErrorsToRetry    | A list of error to retry step for                                                                            |
-| StrictErrorCheck | If set to `true` exact error is matched, else only presence of error is checked                              |
-| SkipRetry        | If set to `true` step is not retried for any error                                                           |
+| Field            | Description                                                                                                              |
+|------------------|--------------------------------------------------------------------------------------------------------------------------|
+| Name             | Name of step                                                                                                             |
+| Function         | The function to execute                                                                                                  |
+| AdditionalArgs   | any additional arguments need to pass to te step                                                                         |
+| NextSteps        | Candidate functions for next step (multiple next steps in-case of condition based execution)                             |
+| NextStepResolver | A function that returns the step name, based on conditions, that is used to pick the nextStep from NextSteps             |
+| ErrorsToRetry    | A list of error to retry step for                                                                                        |
+| StrictErrorCheck | If set to `true` exact error is matched, else only presence of error is checked                                          |
+| SkipRetry        | If set to `true` step is not retried for any error                                                                       |
+| MaxAttempts      | Max attempts are the number of times the step is tried (first try + subsequent retries). If not set, it'll run 100 times |
+| RetrySleep       | Sleep duration (type time.Duration) between each re-attempts                                                             |
 
 ### Defining Steps
 
@@ -110,12 +112,17 @@ To retry a step for particular erors, use the `ErrorsToRetry` field passing the 
 		fmt.Errorf("error to retry"),
 	},
 	StrictErrorCheck: true,
+	MaxAttempts: 5,
+    RetrySleep:  1 * time.Second,
 }
 ```
 
 To skip retry on error pass `true` to the `SkipRetry` field.
 
-**IMPORTANT:** There is no maximum retry for error, so if any error is encountered that is to be retried, it'll be retried till the error goes away and can lead to an infinite execution of the step. Please retry cautiously. Maximum retry parameter will be added soon.
+Additionally,
+
+- To limit the number of tries, use the `MaxAttempts` field, passing the number of max tries. If not set then Default Max Attempts (of 100 tries) is used. To avoid infinite runs due to the MaxAttempts not being set, we're keeping the default attempts to 100. If required, import and use the `gosteps.MaxMaxAttempts`. Please note that the Max value is `9223372036854775807`, which is not infinite but a huge number of attempts, please use cautiously.
+- To add sleep between each attempts, use the `RetrySleep` parameter passing the duration of sleep (of type time.Duration) like `2 * time.Second`.
 
 ## Constraints
 
