@@ -2,7 +2,18 @@ package gosteps
 
 import (
 	"fmt"
+	"math"
 	"strings"
+	"time"
+)
+
+const (
+	// to avoid infinite runs due to the MaxAttempts not being set, we're keeping the default attempts to 100
+	// if required, import and use the MaxMaxAttempts in the step.MaxAttempts field
+	DefaultMaxAttempts = 100
+
+	// the Max value is 9223372036854775807, which is not infinite but a huge number of attempts
+	MaxMaxAttempts = math.MaxInt
 )
 
 var (
@@ -20,6 +31,8 @@ type Step struct {
 	ErrorsToRetry    []error
 	StrictErrorCheck bool
 	SkipRetry        bool
+	MaxAttempts      int
+	RetrySleep       time.Duration
 }
 
 type Steps []Step
@@ -35,6 +48,9 @@ func (steps Steps) Execute(initArgs ...any) ([]interface{}, error) {
 	// entry step
 	var isEntryStep bool = true
 	step := steps[0]
+
+	// step reattepts
+	var stepReAttemptsLeft int = step.MaxAttempts
 
 	for {
 		// piping output from previous step as arguments for current step
@@ -53,14 +69,24 @@ func (steps Steps) Execute(initArgs ...any) ([]interface{}, error) {
 		// execute current step passing step arguments
 		stepOutput, stepError = step.Function.(func(...interface{}) ([]interface{}, error))(stepArgs...)
 		if stepError != nil {
-			if !step.SkipRetry && step.shouldRetry(stepError) {
+			if !step.SkipRetry && step.shouldRetry(stepError) && stepReAttemptsLeft > 0 {
 				// piping args as output for re-running same step
 				stepOutput = stepArgs
+
+				// decrementing re-attempts left for current run
+				stepReAttemptsLeft -= 1
+
+				// sleep step.RetrySleep duration if set
+				if step.RetrySleep > 0 {
+					time.Sleep(step.RetrySleep)
+				}
+
 				continue
 			}
 
-			// skip retry and error not retryable
-			return nil, stepError
+			// skip retry as step error not retryable
+			// return output of previous step and error
+			return stepArgs, stepError
 		}
 
 		// no next step, this is the final step
@@ -68,6 +94,10 @@ func (steps Steps) Execute(initArgs ...any) ([]interface{}, error) {
 			finalOutput = stepOutput
 			return finalOutput, nil
 		}
+
+		// if there are multiple next steps but no resolver,
+		// first one in the list is considered as next step
+		var nextStep Step = step.NextSteps[0]
 
 		// next step is dependant on conditions
 		if step.NextSteps != nil && step.NextStepResolver != nil {
@@ -77,13 +107,19 @@ func (steps Steps) Execute(initArgs ...any) ([]interface{}, error) {
 				return stepOutput, fmt.Errorf(unresolvedStepError, step.Name)
 			}
 
-			step = *resolvedStep
-			continue
+			nextStep = *resolvedStep
 		}
 
-		// if there are multiple next steps but no resolver,
-		// first one in the list is considered as next step
-		step = step.NextSteps[0]
+		// set step as resolved or default nextStep
+		step = nextStep
+
+		// if step.MaxAttempts is not set, set default max value
+		if step.MaxAttempts < 1 {
+			step.MaxAttempts = DefaultMaxAttempts
+		}
+
+		// reset step re-attempts
+		stepReAttemptsLeft = step.MaxAttempts - 1
 	}
 }
 
