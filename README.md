@@ -135,7 +135,7 @@ Here all arguments passed to the step function need to be type asserted within t
 
 ```go
 func Multiply(args ...any) ([]interface{}, error) {
- return []interface{}{args[0].(int) * args[1].(int)}, nil
+	return []interface{}{args[0].(int) * args[1].(int)}, nil
 }
 ```
 
@@ -169,3 +169,5 @@ Running fake error function for arg [[105]]
 Multiply [3150 5250]
 Final Output: [[16537500]]
 ```
+
+*Please Note:* This example flow might change and can be out-of-date. Please check the example.
