@@ -116,7 +116,7 @@ To retry a step for particular erors, use the `ErrorsToRetry` field passing the 
 	},
 	StrictErrorCheck: true,
 	MaxAttempts: 5,
-    RetrySleep:  1 * time.Second,
+	RetrySleep:  1 * time.Second,
 }
 ```
 
