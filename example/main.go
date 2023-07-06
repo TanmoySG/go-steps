@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	gosteps "github.com/TanmoySG/go-steps"
 	"github.com/TanmoySG/go-steps/example/funcs"
@@ -12,6 +13,8 @@ const (
 	stepDivide   = "Divide"
 )
 
+// reading/maintaining this is a bit tricky will add
+// a functional way to create this in the next version
 var steps = gosteps.Steps{
 	{
 		Function: funcs.Add,
@@ -33,13 +36,25 @@ var steps = gosteps.Steps{
 									{
 										Function: funcs.StepWillError3Times,
 										ErrorsToRetry: []error{
-											fmt.Errorf("error to retry"),
+											fmt.Errorf("error"),
 										},
 										NextSteps: gosteps.Steps{
 											{
-												Function: funcs.Multiply,
+												Function: funcs.StepWillErrorInfinitely,
+												ErrorsToRetry: []error{
+													fmt.Errorf("error"),
+												},
+												NextSteps: gosteps.Steps{
+													{
+														Function: funcs.Multiply,
+													},
+												},
+												StrictErrorCheck: true,
+												MaxAttempts:      5, // use gosteps.MaxMaxAttempts for Maximum Possible reattempts
 											},
 										},
+										MaxAttempts: 5,
+										RetrySleep:  1 * time.Second,
 									},
 								},
 							},

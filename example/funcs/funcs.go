@@ -2,7 +2,7 @@ package funcs
 
 import "fmt"
 
-var itr int = 0
+var itr int = 1
 
 func Add(args ...any) ([]interface{}, error) {
 	fmt.Printf("Adding %v\n", args)
@@ -32,5 +32,11 @@ func StepWillError3Times(args ...any) ([]interface{}, error) {
 	}
 
 	itr += 1
+	return nil, fmt.Errorf("error to retry")
+}
+
+// Step will error infinitely
+func StepWillErrorInfinitely(args ...any) ([]interface{}, error) {
+	fmt.Printf("Running infinite fake error function for arg [%v]\n", args)
 	return nil, fmt.Errorf("error to retry")
 }
