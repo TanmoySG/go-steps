@@ -24,7 +24,10 @@ type Step struct {
 	ErrorsToRetry    []error
 	StrictErrorCheck bool
 	SkipRetry        bool
+	MaxAttempts      int
+	RetrySleep       time.Duration
 }
+
 ```
 
 | Field            | Description                                                                                                              |
