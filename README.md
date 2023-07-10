@@ -147,9 +147,9 @@ If you want to help fix the above constraint or other bugs/issues, feel free to 
 
 ## Example
 
-In [this example](./example/main.go), we've used a set of complex steps with conditional step and retry. The flow of the same is
+In [this example](./example/multistep-example/main.go), we've used a set of complex steps with conditional step and retry. The flow of the same is
 
-![flow](./example/diag.png)
+![flow](./example/multistep-example/diag.png)
 
 Execute the example steps
 
