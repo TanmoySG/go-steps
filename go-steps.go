@@ -45,6 +45,11 @@ func (steps Steps) Execute(initArgs ...any) ([]interface{}, error) {
 	var stepOutput []interface{}
 	var stepError error
 
+	// no entry or initial step
+	if len(steps) == 0 {
+		return nil, nil
+	}
+
 	// entry step
 	var isEntryStep bool = true
 	step := steps[0]
