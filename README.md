@@ -16,32 +16,34 @@ The `Step` type contains the requirments to execute a step function and move to 
 
 ```go
 type Step struct {
-	Name             StepName
-	Function         interface{}
-	AdditionalArgs   []interface{}
-	NextSteps        []Step
-	NextStepResolver interface{}
-	ErrorsToRetry    []error
-	StrictErrorCheck bool
-	SkipRetry        bool
-	MaxAttempts      int
-	RetrySleep       time.Duration
+	Name              StepName
+	Function          interface{}
+	AdditionalArgs    []interface{}
+	NextStep          *Step
+	PossibleNextSteps PossibleNextSteps
+	NextStepResolver  interface{}
+	ErrorsToRetry     []error
+	StrictErrorCheck  bool
+	SkipRetry         bool
+	MaxAttempts       int
+	RetrySleep        time.Duration
 }
 
 ```
 
-| Field            | Description                                                                                                              |
-|------------------|--------------------------------------------------------------------------------------------------------------------------|
-| Name             | Name of step                                                                                                             |
-| Function         | The function to execute                                                                                                  |
-| AdditionalArgs   | any additional arguments need to pass to te step                                                                         |
-| NextSteps        | Candidate functions for next step (multiple next steps in-case of condition based execution)                             |
-| NextStepResolver | A function that returns the step name, based on conditions, that is used to pick the nextStep from NextSteps             |
-| ErrorsToRetry    | A list of error to retry step for                                                                                        |
-| StrictErrorCheck | If set to `true` exact error is matched, else only presence of error is checked                                          |
-| SkipRetry        | If set to `true` step is not retried for any error                                                                       |
-| MaxAttempts      | Max attempts are the number of times the step is tried (first try + subsequent retries). If not set, it'll run 100 times |
-| RetrySleep       | Sleep duration (type time.Duration) between each re-attempts                                                             |
+| Field             | Description                                                                                                                  |
+|-------------------|------------------------------------------------------------------------------------------------------------------------------|
+| Name              | Name of step                                                                                                                 |
+| Function          | The function to execute                                                                                                      |
+| AdditionalArgs    | any additional arguments need to pass to te step                                                                             |
+| NextStep          | Next Step for the current step. If next step needs to be conditional dont set this and use `PossibleNextSteps` field instead |
+| PossibleNextSteps | Candidate functions for next step (pick from multiple possible next steps based on condition)                                |
+| NextStepResolver  | A function that returns the step name, based on conditions, that is used to pick the NextStep from PossibleNextSteps         |
+| ErrorsToRetry     | A list of error to retry step for                                                                                            |
+| StrictErrorCheck  | If set to `true` exact error is matched, else only presence of error is checked                                              |
+| SkipRetry         | If set to `true` step is not retried for any error                                                                           |
+| MaxAttempts       | Max attempts are the number of times the step is tried (first try + subsequent retries). If not set, it'll run 100 times     |
+| RetrySleep        | Sleep duration (type time.Duration) between each re-attempts                                                                 |
 
 ### Defining Steps
 

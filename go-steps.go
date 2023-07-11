@@ -38,8 +38,8 @@ type Step struct {
 
 type PossibleNextSteps []Step
 
-func (steps *Step) Execute(initArgs ...any) ([]interface{}, error) {
-	// final output for steps execution
+func (step *Step) Execute(initArgs ...any) ([]interface{}, error) {
+	// final output for step execution
 	var finalOutput []interface{}
 
 	// initialize step output and step error
@@ -47,13 +47,12 @@ func (steps *Step) Execute(initArgs ...any) ([]interface{}, error) {
 	var stepError error
 
 	// no initial step or function
-	if steps == nil || steps.Function == nil {
+	if step == nil || step.Function == nil {
 		return nil, nil
 	}
 
 	// entry step
 	var isEntryStep bool = true
-	step := steps
 
 	// step reattepts
 	var stepReAttemptsLeft int = step.MaxAttempts
@@ -63,7 +62,7 @@ func (steps *Step) Execute(initArgs ...any) ([]interface{}, error) {
 		stepArgs := []interface{}{}
 		stepArgs = append(stepArgs, stepOutput...)
 
-		// only runs for first step in steps
+		// only runs for first step in step
 		if isEntryStep {
 			stepArgs = initArgs
 			isEntryStep = false
