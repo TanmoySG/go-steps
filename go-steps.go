@@ -27,7 +27,7 @@ type Step struct {
 	Function          interface{}
 	AdditionalArgs    []interface{}
 	NextStep          *Step
-	PossibleNextSteps []Step
+	PossibleNextSteps PossibleNextSteps
 	NextStepResolver  interface{}
 	ErrorsToRetry     []error
 	StrictErrorCheck  bool
@@ -36,7 +36,7 @@ type Step struct {
 	RetrySleep        time.Duration
 }
 
-type Steps []Step
+type PossibleNextSteps []Step
 
 func (steps *Step) Execute(initArgs ...any) ([]interface{}, error) {
 	// final output for steps execution
@@ -46,8 +46,8 @@ func (steps *Step) Execute(initArgs ...any) ([]interface{}, error) {
 	var stepOutput []interface{}
 	var stepError error
 
-	// no entry or initial step
-	if steps == nil {
+	// no initial step or function
+	if steps == nil || steps.Function == nil {
 		return nil, nil
 	}
 
@@ -96,13 +96,10 @@ func (steps *Step) Execute(initArgs ...any) ([]interface{}, error) {
 		}
 
 		// no next step, this is the final step
-		if step.NextStep == nil || step.PossibleNextSteps == nil {
+		if step.NextStep == nil && step.PossibleNextSteps == nil {
 			finalOutput = stepOutput
 			return finalOutput, nil
 		}
-
-		// if there are multiple next steps but no resolver,
-		// first one in the list is considered as next step
 
 		// next step is dependant on conditions
 		if step.PossibleNextSteps != nil && step.NextStepResolver != nil {

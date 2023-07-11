@@ -22,20 +22,18 @@ package main
 
 // 	iterStep := step
 // 	for _, i := range intsToAdd {
-// 		iterStep.NextSteps = append(iterStep.NextSteps, gosteps.Step{
+// 		iterStep.NextStep = &gosteps.Step{
 // 			Function:       funcs.Add,
 // 			AdditionalArgs: []interface{}{i},
-// 		})
-// 		step = iterStep
-// 		iterStep = iterStep.NextSteps[0]
+// 		}
+
+// 		iterStep = *iterStep.NextStep
 // 		fmt.Println(">", step)
 // 		fmt.Println(iterStep)
 // 	}
 
-// 	steps := gosteps.Steps{iterStep}
-
-// 	initArgs := []interface{}{1}
-// 	finalOutput, err := steps.Execute(initArgs...)
+// 	// initArgs := []interface{}{1}
+// 	finalOutput, err := step.Execute(1)
 // 	if err != nil {
 // 		fmt.Printf("error executing steps: %s, final output: [%s]\n", err, finalOutput)
 // 	}
