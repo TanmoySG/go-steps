@@ -2,10 +2,8 @@ package main
 
 import (
 	"fmt"
-	"time"
 
 	gosteps "github.com/TanmoySG/go-steps"
-	"github.com/TanmoySG/go-steps/example/funcs"
 )
 
 const (
@@ -15,60 +13,49 @@ const (
 
 // reading/maintaining this is a bit tricky will add
 // a functional way to create this in the next version
-var steps = gosteps.Steps{
-	{
-		Function: funcs.Add,
-		NextSteps: gosteps.Steps{
-			{
-				Function:         funcs.Sub,
-				AdditionalArgs:   []interface{}{4},
-				NextStepResolver: nextStepResolver,
-				NextSteps: gosteps.Steps{
-					{
-						Name:           stepMultiply,
-						Function:       funcs.Multiply,
-						AdditionalArgs: []interface{}{-5},
-						NextSteps: gosteps.Steps{
-							{
-								Function:       funcs.Add,
-								AdditionalArgs: []interface{}{100},
-								NextSteps: gosteps.Steps{
-									{
-										Function: funcs.StepWillError3Times,
-										ErrorsToRetry: []error{
-											fmt.Errorf("error"),
-										},
-										NextSteps: gosteps.Steps{
-											{
-												Function: funcs.StepWillErrorInfinitely,
-												ErrorsToRetry: []error{
-													fmt.Errorf("error"),
-												},
-												NextSteps: gosteps.Steps{
-													{
-														Function: funcs.Multiply,
-													},
-												},
-												StrictErrorCheck: true,
-												MaxAttempts:      5, // use gosteps.MaxMaxAttempts for Maximum Possible reattempts
-											},
-										},
-										MaxAttempts: 5,
-										RetrySleep:  1 * time.Second,
-									},
-								},
-							},
-						},
-					},
-					{
-						Name:           stepDivide,
-						Function:       funcs.Divide,
-						AdditionalArgs: []interface{}{-2},
-					},
-				},
-			},
-		},
-	},
+var steps = &gosteps.Step{
+	// Function: funcs.Add,
+	// NextStep: &gosteps.Step{
+	// 	Function:         funcs.Sub,
+	// 	AdditionalArgs:   []interface{}{4},
+	// 	NextStepResolver: nextStepResolver,
+	// 	PossibleNextSteps: gosteps.Steps{
+	// 		{
+	// 			Name:           stepMultiply,
+	// 			Function:       funcs.Multiply,
+	// 			AdditionalArgs: []interface{}{-5},
+	// 			NextStep: &gosteps.Step{
+	// 				Function:       funcs.Add,
+	// 				AdditionalArgs: []interface{}{100},
+	// 				NextStep: &gosteps.Step{
+	// 					Function: funcs.StepWillError3Times,
+	// 					ErrorsToRetry: []error{
+	// 						fmt.Errorf("error"),
+	// 					},
+	// 					NextStep: &gosteps.Step{
+	// 						Function: funcs.StepWillErrorInfinitely,
+	// 						ErrorsToRetry: []error{
+	// 							fmt.Errorf("error"),
+	// 						},
+	// 						NextStep: &gosteps.Step{
+	// 							Function: funcs.Multiply,
+	// 						},
+	// 						StrictErrorCheck: true,
+	// 						MaxAttempts:      5, // use gosteps.MaxMaxAttempts for Maximum Possible reattempts
+
+	// 					},
+	// 					MaxAttempts: 5,
+	// 					RetrySleep:  1 * time.Second,
+	// 				},
+	// 			},
+	// 		},
+	// 		{
+	// 			Name:           stepDivide,
+	// 			Function:       funcs.Divide,
+	// 			AdditionalArgs: []interface{}{-2},
+	// 		},
+	// 	},
+	// },
 }
 
 func main() {
