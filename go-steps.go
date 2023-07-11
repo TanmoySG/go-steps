@@ -23,36 +23,36 @@ var (
 type StepName string
 
 type Step struct {
-	Name             StepName
-	Function         interface{}
-	AdditionalArgs   []interface{}
-	NextSteps        []Step
-	NextStepResolver interface{}
-	ErrorsToRetry    []error
-	StrictErrorCheck bool
-	SkipRetry        bool
-	MaxAttempts      int
-	RetrySleep       time.Duration
+	Name              StepName
+	Function          interface{}
+	AdditionalArgs    []interface{}
+	NextStep          *Step
+	PossibleNextSteps PossibleNextSteps
+	NextStepResolver  interface{}
+	ErrorsToRetry     []error
+	StrictErrorCheck  bool
+	SkipRetry         bool
+	MaxAttempts       int
+	RetrySleep        time.Duration
 }
 
-type Steps []Step
+type PossibleNextSteps []Step
 
-func (steps Steps) Execute(initArgs ...any) ([]interface{}, error) {
-	// final output for steps execution
+func (step *Step) Execute(initArgs ...any) ([]interface{}, error) {
+	// final output for step execution
 	var finalOutput []interface{}
 
 	// initialize step output and step error
 	var stepOutput []interface{}
 	var stepError error
 
-	// no entry or initial step
-	if len(steps) == 0 {
+	// no initial step or function
+	if step == nil || step.Function == nil {
 		return nil, nil
 	}
 
 	// entry step
 	var isEntryStep bool = true
-	step := steps[0]
 
 	// step reattepts
 	var stepReAttemptsLeft int = step.MaxAttempts
@@ -62,7 +62,7 @@ func (steps Steps) Execute(initArgs ...any) ([]interface{}, error) {
 		stepArgs := []interface{}{}
 		stepArgs = append(stepArgs, stepOutput...)
 
-		// only runs for first step in steps
+		// only runs for first step in step
 		if isEntryStep {
 			stepArgs = initArgs
 			isEntryStep = false
@@ -95,28 +95,23 @@ func (steps Steps) Execute(initArgs ...any) ([]interface{}, error) {
 		}
 
 		// no next step, this is the final step
-		if step.NextSteps == nil {
+		if step.NextStep == nil && step.PossibleNextSteps == nil {
 			finalOutput = stepOutput
 			return finalOutput, nil
 		}
 
-		// if there are multiple next steps but no resolver,
-		// first one in the list is considered as next step
-		var nextStep Step = step.NextSteps[0]
-
 		// next step is dependant on conditions
-		if step.NextSteps != nil && step.NextStepResolver != nil {
+		if step.PossibleNextSteps != nil && step.NextStepResolver != nil {
 			nextStepName := step.NextStepResolver.(func(...interface{}) string)(stepOutput...)
 			resolvedStep := step.resolveNextStep(StepName(nextStepName))
 			if resolvedStep == nil {
 				return stepOutput, fmt.Errorf(unresolvedStepError, step.Name)
 			}
-
-			nextStep = *resolvedStep
+			step.NextStep = resolvedStep
 		}
 
 		// set step as resolved or default nextStep
-		step = nextStep
+		step = step.NextStep
 
 		// if step.MaxAttempts is not set, set default max value
 		if step.MaxAttempts < 1 {
@@ -143,7 +138,7 @@ func (step Step) shouldRetry(err error) bool {
 
 // resolve next step by step name
 func (step Step) resolveNextStep(stepName StepName) *Step {
-	for _, nextStep := range step.NextSteps {
+	for _, nextStep := range step.PossibleNextSteps {
 		if nextStep.Name == stepName {
 			return &nextStep
 		}

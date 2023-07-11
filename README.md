@@ -16,50 +16,48 @@ The `Step` type contains the requirments to execute a step function and move to 
 
 ```go
 type Step struct {
-	Name             StepName
-	Function         interface{}
-	AdditionalArgs   []interface{}
-	NextSteps        []Step
-	NextStepResolver interface{}
-	ErrorsToRetry    []error
-	StrictErrorCheck bool
-	SkipRetry        bool
-	MaxAttempts      int
-	RetrySleep       time.Duration
+	Name              StepName
+	Function          interface{}
+	AdditionalArgs    []interface{}
+	NextStep          *Step
+	PossibleNextSteps PossibleNextSteps
+	NextStepResolver  interface{}
+	ErrorsToRetry     []error
+	StrictErrorCheck  bool
+	SkipRetry         bool
+	MaxAttempts       int
+	RetrySleep        time.Duration
 }
 
 ```
 
-| Field            | Description                                                                                                              |
-|------------------|--------------------------------------------------------------------------------------------------------------------------|
-| Name             | Name of step                                                                                                             |
-| Function         | The function to execute                                                                                                  |
-| AdditionalArgs   | any additional arguments need to pass to te step                                                                         |
-| NextSteps        | Candidate functions for next step (multiple next steps in-case of condition based execution)                             |
-| NextStepResolver | A function that returns the step name, based on conditions, that is used to pick the nextStep from NextSteps             |
-| ErrorsToRetry    | A list of error to retry step for                                                                                        |
-| StrictErrorCheck | If set to `true` exact error is matched, else only presence of error is checked                                          |
-| SkipRetry        | If set to `true` step is not retried for any error                                                                       |
-| MaxAttempts      | Max attempts are the number of times the step is tried (first try + subsequent retries). If not set, it'll run 100 times |
-| RetrySleep       | Sleep duration (type time.Duration) between each re-attempts                                                             |
+| Field             | Description                                                                                                                  |
+|-------------------|------------------------------------------------------------------------------------------------------------------------------|
+| Name              | Name of step                                                                                                                 |
+| Function          | The function to execute                                                                                                      |
+| AdditionalArgs    | any additional arguments need to pass to te step                                                                             |
+| NextStep          | Next Step for the current step. If next step needs to be conditional dont set this and use `PossibleNextSteps` field instead |
+| PossibleNextSteps | Candidate functions for next step (pick from multiple possible next steps based on condition)                                |
+| NextStepResolver  | A function that returns the step name, based on conditions, that is used to pick the NextStep from PossibleNextSteps         |
+| ErrorsToRetry     | A list of error to retry step for                                                                                            |
+| StrictErrorCheck  | If set to `true` exact error is matched, else only presence of error is checked                                              |
+| SkipRetry         | If set to `true` step is not retried for any error                                                                           |
+| MaxAttempts       | Max attempts are the number of times the step is tried (first try + subsequent retries). If not set, it'll run 100 times     |
+| RetrySleep        | Sleep duration (type time.Duration) between each re-attempts                                                                 |
 
 ### Defining Steps
 
-To define steps, use the `gosteps.Steps` type and link the next steps in the `NextSteps` field as follows
+To define steps, use the `gosteps.Steps` type and link the next steps in the `NextStep` field as follows
 
 ```go
-var steps = gosteps.Steps{
-	{
-		Name: "add",
-		Function: funcs.Add,
-		AdditionalArgs: []interface{}{2, 3},
-		NextSteps: gosteps.Steps{
-			{
-				Name: "sub",
-				Function:       funcs.Sub,
-				AdditionalArgs: []interface{}{4},
-			},
-		},
+var steps = gosteps.Step{
+	Name: "add",
+	Function: funcs.Add,
+	AdditionalArgs: []interface{}{2, 3},
+	NextStep: gosteps.Steps{
+		Name: "sub",
+		Function:       funcs.Sub,
+		AdditionalArgs: []interface{}{4},
 	},
 }
 ```
@@ -68,7 +66,31 @@ Here the first step is `Add` and next step (and final) is `Sub`, so the output o
 
 ### Conditional Steps
 
-Some steps might have multiple candidates for next step and the executable next step is to be picked based on the output of the current step. To do so, steps with multiple next step candidates must use the `NextStepResolver` field passing a resolver function that returns the Name of the function to use as next step.
+Some steps might have multiple candidates for next step and the executable next step is to be picked based on the output of the current step. Define the possible next steps in the `PossibleNextSteps` field, as an array of Steps.
+
+```go
+PossibleNextSteps: gosteps.Step{
+	Function:       funcs.Add,
+		AdditionalArgs: []interface{}{2},
+		NextStep: &gosteps.Step{
+			Function:         funcs.Sub,
+			AdditionalArgs:   []interface{}{4},
+			NextStepResolver: nextStepResolver,
+			PossibleNextSteps: gosteps.PossibleNextSteps{
+				{
+					Name:           "multiply",
+					Function:       funcs.Multiply,
+				},
+				{
+				Name:           "divide",
+					Function:       funcs.Divide,
+				},
+			}
+	}
+}
+```
+
+To pick the required next step based on conditions, we must use the `NextStepResolver` field passing a resolver function that returns the Name of the function to use as next step.
 
 The resolver function should be of type `func(args ...any) string`, where `args` are the output of current step and returned string is the name of the step to use.
 
@@ -147,9 +169,9 @@ If you want to help fix the above constraint or other bugs/issues, feel free to 
 
 ## Example
 
-In [this example](./example/main.go), we've used a set of complex steps with conditional step and retry. The flow of the same is
+In [this example](./example/multistep-example/main.go), we've used a set of complex steps with conditional step and retry. The flow of the same is
 
-![flow](./example/diag.png)
+![flow](./example/multistep-example/diag.png)
 
 Execute the example steps
 
