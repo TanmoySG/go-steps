@@ -47,21 +47,17 @@ type Step struct {
 
 ### Defining Steps
 
-To define steps, use the `gosteps.Steps` type and link the next steps in the `NextSteps` field as follows
+To define steps, use the `gosteps.Steps` type and link the next steps in the `NextStep` field as follows
 
 ```go
-var steps = gosteps.Steps{
-	{
-		Name: "add",
-		Function: funcs.Add,
-		AdditionalArgs: []interface{}{2, 3},
-		NextSteps: gosteps.Steps{
-			{
-				Name: "sub",
-				Function:       funcs.Sub,
-				AdditionalArgs: []interface{}{4},
-			},
-		},
+var steps = gosteps.Step{
+	Name: "add",
+	Function: funcs.Add,
+	AdditionalArgs: []interface{}{2, 3},
+	NextStep: gosteps.Steps{
+		Name: "sub",
+		Function:       funcs.Sub,
+		AdditionalArgs: []interface{}{4},
 	},
 }
 ```
@@ -70,7 +66,31 @@ Here the first step is `Add` and next step (and final) is `Sub`, so the output o
 
 ### Conditional Steps
 
-Some steps might have multiple candidates for next step and the executable next step is to be picked based on the output of the current step. To do so, steps with multiple next step candidates must use the `NextStepResolver` field passing a resolver function that returns the Name of the function to use as next step.
+Some steps might have multiple candidates for next step and the executable next step is to be picked based on the output of the current step. Define the possible next steps in the `PossibleNextSteps` field, as an array of Steps.
+
+```go
+PossibleNextSteps: gosteps.Step{
+	Function:       funcs.Add,
+		AdditionalArgs: []interface{}{2},
+		NextStep: &gosteps.Step{
+			Function:         funcs.Sub,
+			AdditionalArgs:   []interface{}{4},
+			NextStepResolver: nextStepResolver,
+			PossibleNextSteps: gosteps.PossibleNextSteps{
+				{
+					Name:           "multiply",
+					Function:       funcs.Multiply,
+				},
+				{
+				Name:           "divide",
+					Function:       funcs.Divide,
+				},
+			}
+	}
+}
+```
+
+To pick the required next step based on conditions, we must use the `NextStepResolver` field passing a resolver function that returns the Name of the function to use as next step.
 
 The resolver function should be of type `func(args ...any) string`, where `args` are the output of current step and returned string is the name of the step to use.
 
