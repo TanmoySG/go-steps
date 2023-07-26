@@ -36,7 +36,8 @@ type Step struct {
 |-------------------|------------------------------------------------------------------------------------------------------------------------------|
 | Name              | Name of step                                                                                                                 |
 | Function          | The function to execute                                                                                                      |
-| StepArgs    | any additional arguments need to pass to te step                                                                             |
+| StepArgs          | any additional arguments need to pass to te step                                                                             |
+| UseArguments      | Choosing Arguments to Use from previous step's return or current step's arguments or both.                                   |
 | NextStep          | Next Step for the current step. If next step needs to be conditional dont set this and use `PossibleNextSteps` field instead |
 | PossibleNextSteps | Candidate functions for next step (pick from multiple possible next steps based on condition)                                |
 | NextStepResolver  | A function that returns the step name, based on conditions, that is used to pick the NextStep from PossibleNextSteps         |
@@ -44,7 +45,7 @@ type Step struct {
 | StrictErrorCheck  | If set to `true` exact error is matched, else only presence of error is checked                                              |
 | SkipRetry         | If set to `true` step is not retried for any error                                                                           |
 | MaxAttempts       | Max attempts are the number of times the step is tried (first try + subsequent retries). If not set, it'll run 100 times     |
-| RetrySleep        | Sleep duration (type time.Duration) between each re-attempts                                                                 |
+| RetrySleep        | Sleep duration (type time.Duration) between each re-attempts                                                                 |                                                                |
 
 ### Step Function
 
