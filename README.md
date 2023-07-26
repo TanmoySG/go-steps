@@ -46,6 +46,21 @@ type Step struct {
 | MaxAttempts       | Max attempts are the number of times the step is tried (first try + subsequent retries). If not set, it'll run 100 times     |
 | RetrySleep        | Sleep duration (type time.Duration) between each re-attempts                                                                 |
 
+### Step Function
+
+Define a step function using the following function signature. You can also use the  `StepFn` type.
+
+```go
+// StepFn Type
+type StepFn func(...interface{}) ([]interface{}, error)
+
+// sample Step function
+func Add(args ...any) ([]interface{}, error) {
+	fmt.Printf("Adding %v\n", args)
+	return []interface{}{args[0].(int) + args[1].(int)}, nil
+}
+```
+
 To see all the `types` available in go-steps see [`types.go`](./go_step_types.go)
 
 ### Defining Steps
