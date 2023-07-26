@@ -84,7 +84,11 @@ Here the first step is `Add` and next step (and final) is `Sub`, so the output o
 
 ### Choosing Arguments to Use
 
-Arguments to use in the current step function's execution is determined using the previous step returned values and the current step arguments specified. You can choose if you want to use previous step returned values as arguments to current step, or you want to use only current step arguments or both. You can also choose the order in which the returns from previous step, and step arguments are passed as arguments. This can be done so by passing the "strategy" to the `UseArguments` field. 
+Arguments to use in the current step function's execution is determined using the previous step returned values and the current step arguments specified. 
+
+You can choose if you want to use previous step returned values as arguments to current step, or you want to use only current step arguments or both. You can also choose the order in which the returns from previous step, and step arguments are passed as arguments. 
+
+This can be done so by passing the "strategy" to the `UseArguments` field. 
 
 There are four directives defined in the library
 
