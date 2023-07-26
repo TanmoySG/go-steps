@@ -88,9 +88,7 @@ Arguments to use in the current step function's execution is determined using th
 
 You can choose if you want to use previous step returned values as arguments to current step, or you want to use only current step arguments or both. You can also choose the order in which the returns from previous step, and step arguments are passed as arguments. 
 
-This can be done so by passing the "strategy" to the `UseArguments` field. 
-
-There are four directives defined in the library
+This can be done so by passing the "strategy" to the `UseArguments` field. There are four directives defined in the library
 
 ```go
  // only previous step return will be passed to current step as arguments
