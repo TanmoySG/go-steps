@@ -35,6 +35,7 @@ func (step *Step) Execute(initArgs ...any) ([]interface{}, error) {
 			isEntryStep = false
 		}
 
+		// resolve step arguments based on step.UseArguments
 		stepArgs = step.resolveStepArguments(stepOutput)
 
 		// execute current step passing step arguments
