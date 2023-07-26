@@ -46,6 +46,8 @@ type Step struct {
 | MaxAttempts       | Max attempts are the number of times the step is tried (first try + subsequent retries). If not set, it'll run 100 times     |
 | RetrySleep        | Sleep duration (type time.Duration) between each re-attempts                                                                 |
 
+To see all the `types` available in go-steps see [`types.go`](./go_step_types.go)
+
 ### Defining Steps
 
 To define steps, use the `gosteps.Steps` type and link the next steps in the `NextStep` field as follows
