@@ -20,12 +20,33 @@ var (
 	unresolvedStepError = "error: step [%s] is unresolved, no step found with this name."
 )
 
+type stepArgChainingType string
+
+var (
+	// only previous step return will be passed to current step as arguments
+	PreviousStepReturns stepArgChainingType = "PreviousStepReturns"
+
+	// only current step arguments (StepArgs) will be passed to current step as arguments
+	CurrentStepArgs stepArgChainingType = "CurrentStepArgs"
+
+	// both previous step returns and current step arguments (StepArgs) will be passed
+	// to current step as arguments - previous step returns, followed by current step args,
+	PreviousReturnsWithCurrentStepArgs stepArgChainingType = "PreviousReturnsWithCurrentStepArgs"
+
+	// both previous step returns and current step arguments (StepArgs) will be passed
+	// to current step as arguments - current step args, followed by previous step returns
+	CurrentStepArgsWithPreviousReturns stepArgChainingType = "CurrentStepArgsWithPreviousReturns"
+)
+
 type StepName string
+type StepFn func(...interface{}) ([]interface{}, error)
+type PossibleNextSteps []Step
 
 type Step struct {
 	Name              StepName
-	Function          interface{}
-	AdditionalArgs    []interface{}
+	Function          StepFn
+	UseArguments      stepArgChainingType
+	StepArgs          []interface{}
 	NextStep          *Step
 	PossibleNextSteps PossibleNextSteps
 	NextStepResolver  interface{}
@@ -35,8 +56,6 @@ type Step struct {
 	MaxAttempts       int
 	RetrySleep        time.Duration
 }
-
-type PossibleNextSteps []Step
 
 func (step *Step) Execute(initArgs ...any) ([]interface{}, error) {
 	// final output for step execution
@@ -59,20 +78,18 @@ func (step *Step) Execute(initArgs ...any) ([]interface{}, error) {
 
 	for {
 		// piping output from previous step as arguments for current step
-		stepArgs := []interface{}{}
-		stepArgs = append(stepArgs, stepOutput...)
+		var stepArgs []interface{}
 
 		// only runs for first step in step
 		if isEntryStep {
-			stepArgs = initArgs
+			step.StepArgs = append(step.StepArgs, initArgs...)
 			isEntryStep = false
 		}
 
-		// piping additional arguments  as arguments for current step
-		stepArgs = append(stepArgs, step.AdditionalArgs...)
+		stepArgs = step.resolveStepArguments(stepOutput)
 
 		// execute current step passing step arguments
-		stepOutput, stepError = step.Function.(func(...interface{}) ([]interface{}, error))(stepArgs...)
+		stepOutput, stepError = step.Function(stepArgs...)
 		if stepError != nil {
 			if !step.SkipRetry && step.shouldRetry(stepError) && stepReAttemptsLeft > 0 {
 				// piping args as output for re-running same step
@@ -145,4 +162,23 @@ func (step Step) resolveNextStep(stepName StepName) *Step {
 	}
 
 	return nil
+}
+
+func (step Step) resolveStepArguments(previousStepReturns []interface{}) []interface{} {
+	var resolvedStepArgs []interface{}
+
+	switch step.UseArguments {
+	case PreviousStepReturns:
+		resolvedStepArgs = previousStepReturns
+	case CurrentStepArgs:
+		resolvedStepArgs = step.StepArgs
+	case PreviousReturnsWithCurrentStepArgs:
+		resolvedStepArgs = append(resolvedStepArgs, previousStepReturns...)
+		resolvedStepArgs = append(resolvedStepArgs, step.StepArgs...)
+	default: // covers UseCurrentStepArgsWithPreviousReturns too
+		resolvedStepArgs = append(resolvedStepArgs, step.StepArgs...)
+		resolvedStepArgs = append(resolvedStepArgs, previousStepReturns...)
+	}
+
+	return resolvedStepArgs
 }
