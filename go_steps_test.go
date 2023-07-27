@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/TanmoySG/go-steps/example/funcs"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -123,4 +124,25 @@ func Test_shouldRetry(t *testing.T) {
 
 		assert.Equal(t, tc.ExpectedShouldRetry, shouldRetry)
 	}
+}
+
+func Test_Execute(t *testing.T) {
+
+	steps := Step{
+		Function:     funcs.Add,
+		StepArgs:     []interface{}{5},
+		UseArguments: CurrentStepArgsWithPreviousReturns,
+		NextStep: &Step{
+			Function:     funcs.Sub,
+			StepArgs:     []interface{}{5},
+			UseArguments: CurrentStepArgsWithPreviousReturns,
+		},
+	}
+
+	initArgs := []interface{}{2}
+
+	out, err := steps.Execute(initArgs...)
+
+	assert.Nil(t, err)
+	assert.Equal(t, []interface{}{-2}, out)
 }
