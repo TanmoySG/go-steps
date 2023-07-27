@@ -66,7 +66,7 @@ To see all the `types` available in go-steps see [`types.go`](./go_step_types.go
 
 ### Defining Steps
 
-To define steps, use the `gosteps.Steps` type and link the next steps in the `NextStep` field as follows
+To define steps, use the `gosteps.Step` type and link the next steps in the `NextStep` field like a Linked List.
 
 ```go
 var steps = gosteps.Step{

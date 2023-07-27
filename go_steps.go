@@ -95,7 +95,7 @@ func (step Step) shouldRetry(err error) bool {
 	for _, errorToRetry := range step.ErrorsToRetry {
 		if step.StrictErrorCheck && err.Error() == errorToRetry.Error() {
 			return true
-		} else if !step.StrictErrorCheck && strings.Contains(err.Error(), errorToRetry.Error()) {
+		} else if !step.StrictErrorCheck && strings.Contains(errorToRetry.Error(), err.Error()) {
 			return true
 		}
 	}

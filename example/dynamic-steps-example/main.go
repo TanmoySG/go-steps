@@ -27,7 +27,7 @@ func main() {
 // step to add new next step to step-chain; basically a linked-list insertion
 func addStepToChain(step *gosteps.Step, stepFunc gosteps.StepFn, additionalArgs []interface{}) *gosteps.Step {
 	temp := gosteps.Step{
-		Function:       stepFunc,
+		Function: stepFunc,
 		StepArgs: additionalArgs,
 	}
 
