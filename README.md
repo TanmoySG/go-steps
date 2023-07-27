@@ -5,7 +5,7 @@
 GoSteps is a go library that helps in running functions as steps and reminds you to step out and get active (kidding!). 
 
 <p align="center">
- <img src="https://codetips.dev/wp-content/uploads/2022/08/gopher-go-run.jpg" alt="Sublime's custom image" width="300" height="300" />
+ <img src="https://upload.wikimedia.org/wikipedia/commons/b/b3/Go_gopher_pencil_running.jpg" alt="Sublime's custom image" width="300" height="300" />
 </p>
 
 The idea behind `gosteps` is to define set of functions as steps-chain (kind of a linked list) and execute them in a sequential fashion by piping output (other than error) from previous step, as arguments, into the next steps (not necessarily using the args).
@@ -17,8 +17,9 @@ The `Step` type contains the requirments to execute a step function and move to 
 ```go
 type Step struct {
 	Name              StepName
-	Function          interface{}
-	AdditionalArgs    []interface{}
+	Function          StepFn
+	UseArguments      stepArgChainingType
+	StepArgs          []interface{}
 	NextStep          *Step
 	PossibleNextSteps PossibleNextSteps
 	NextStepResolver  interface{}
@@ -35,7 +36,8 @@ type Step struct {
 |-------------------|------------------------------------------------------------------------------------------------------------------------------|
 | Name              | Name of step                                                                                                                 |
 | Function          | The function to execute                                                                                                      |
-| AdditionalArgs    | any additional arguments need to pass to te step                                                                             |
+| StepArgs          | any additional arguments need to pass to te step                                                                             |
+| UseArguments      | Choosing Arguments to Use from previous step's return or current step's arguments or both.                                   |
 | NextStep          | Next Step for the current step. If next step needs to be conditional dont set this and use `PossibleNextSteps` field instead |
 | PossibleNextSteps | Candidate functions for next step (pick from multiple possible next steps based on condition)                                |
 | NextStepResolver  | A function that returns the step name, based on conditions, that is used to pick the NextStep from PossibleNextSteps         |
@@ -43,26 +45,82 @@ type Step struct {
 | StrictErrorCheck  | If set to `true` exact error is matched, else only presence of error is checked                                              |
 | SkipRetry         | If set to `true` step is not retried for any error                                                                           |
 | MaxAttempts       | Max attempts are the number of times the step is tried (first try + subsequent retries). If not set, it'll run 100 times     |
-| RetrySleep        | Sleep duration (type time.Duration) between each re-attempts                                                                 |
+| RetrySleep        | Sleep duration (type time.Duration) between each re-attempts                                                                 |                                                                |
+
+### Step Function
+
+Define a step function using the following function signature. You can also use the  `StepFn` type.
+
+```go
+// StepFn Type
+type StepFn func(...interface{}) ([]interface{}, error)
+
+// sample Step function
+func Add(args ...any) ([]interface{}, error) {
+	fmt.Printf("Adding %v\n", args)
+	return []interface{}{args[0].(int) + args[1].(int)}, nil
+}
+```
+
+To see all the `types` available in go-steps see [`types.go`](./go_step_types.go)
 
 ### Defining Steps
 
-To define steps, use the `gosteps.Steps` type and link the next steps in the `NextStep` field as follows
+To define steps, use the `gosteps.Step` type and link the next steps in the `NextStep` field like a Linked List.
 
 ```go
 var steps = gosteps.Step{
 	Name: "add",
 	Function: funcs.Add,
-	AdditionalArgs: []interface{}{2, 3},
+	StepArgs: []interface{}{2, 3},
 	NextStep: gosteps.Steps{
 		Name: "sub",
 		Function:       funcs.Sub,
-		AdditionalArgs: []interface{}{4},
+		StepArgs: []interface{}{4},
 	},
 }
 ```
 
 Here the first step is `Add` and next step (and final) is `Sub`, so the output of Add is piped to Sub and that gives the final output.
+
+### Choosing Arguments to Use
+
+Arguments to use in the current step function's execution is determined using the previous step returned values and the current step arguments specified. 
+
+You can choose if you want to use previous step returned values as arguments to current step, or you want to use only current step arguments or both. You can also choose the order in which the returns from previous step, and step arguments are passed as arguments. 
+
+This can be done so by passing the "strategy" to the `UseArguments` field. There are four directives defined in the library
+
+```go
+ // only previous step return will be passed to current step as arguments
+ PreviousStepReturns stepArgChainingType = "PreviousStepReturns"
+
+ // only current step arguments (StepArgs) will be passed to current step as arguments
+ CurrentStepArgs stepArgChainingType = "CurrentStepArgs"
+
+ // both previous step returns and current step arguments (StepArgs) will be passed
+ // to current step as arguments - previous step returns, followed by current step args,
+ PreviousReturnsWithCurrentStepArgs stepArgChainingType = "PreviousReturnsWithCurrentStepArgs"
+
+ // both previous step returns and current step arguments (StepArgs) will be passed
+ // to current step as arguments - current step args, followed by previous step returns
+ CurrentStepArgsWithPreviousReturns stepArgChainingType = "CurrentStepArgsWithPreviousReturns"
+```
+
+These values can be used in the step chain as
+```go
+var steps = gosteps.Step{
+	Name: "add",
+	Function: funcs.Add,
+	StepArgs: []interface{}{2, 3},
+	NextStep: gosteps.Steps{
+		Name: "sub",
+		Function:       funcs.Sub,
+		StepArgs: []interface{}{4, 6},
+		UseArguments: gosteps.CurrentStepArgs,
+	},
+}
+```
 
 ### Conditional Steps
 
@@ -71,10 +129,10 @@ Some steps might have multiple candidates for next step and the executable next 
 ```go
 PossibleNextSteps: gosteps.Step{
 	Function:       funcs.Add,
-		AdditionalArgs: []interface{}{2},
+		StepArgs: []interface{}{2},
 		NextStep: &gosteps.Step{
 			Function:         funcs.Sub,
-			AdditionalArgs:   []interface{}{4},
+			StepArgs:   []interface{}{4},
 			NextStepResolver: nextStepResolver,
 			PossibleNextSteps: gosteps.PossibleNextSteps{
 				{

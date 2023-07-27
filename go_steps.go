@@ -2,41 +2,9 @@ package gosteps
 
 import (
 	"fmt"
-	"math"
 	"strings"
 	"time"
 )
-
-const (
-	// to avoid infinite runs due to the MaxAttempts not being set, we're keeping the default attempts to 100
-	// if required, import and use the MaxMaxAttempts in the step.MaxAttempts field
-	DefaultMaxAttempts = 100
-
-	// the Max value is 9223372036854775807, which is not infinite but a huge number of attempts
-	MaxMaxAttempts = math.MaxInt
-)
-
-var (
-	unresolvedStepError = "error: step [%s] is unresolved, no step found with this name."
-)
-
-type StepName string
-
-type Step struct {
-	Name              StepName
-	Function          interface{}
-	AdditionalArgs    []interface{}
-	NextStep          *Step
-	PossibleNextSteps PossibleNextSteps
-	NextStepResolver  interface{}
-	ErrorsToRetry     []error
-	StrictErrorCheck  bool
-	SkipRetry         bool
-	MaxAttempts       int
-	RetrySleep        time.Duration
-}
-
-type PossibleNextSteps []Step
 
 func (step *Step) Execute(initArgs ...any) ([]interface{}, error) {
 	// final output for step execution
@@ -59,20 +27,19 @@ func (step *Step) Execute(initArgs ...any) ([]interface{}, error) {
 
 	for {
 		// piping output from previous step as arguments for current step
-		stepArgs := []interface{}{}
-		stepArgs = append(stepArgs, stepOutput...)
+		var stepArgs []interface{}
 
 		// only runs for first step in step
 		if isEntryStep {
-			stepArgs = initArgs
+			step.StepArgs = append(step.StepArgs, initArgs...)
 			isEntryStep = false
 		}
 
-		// piping additional arguments  as arguments for current step
-		stepArgs = append(stepArgs, step.AdditionalArgs...)
+		// resolve step arguments based on step.UseArguments
+		stepArgs = step.resolveStepArguments(stepOutput)
 
 		// execute current step passing step arguments
-		stepOutput, stepError = step.Function.(func(...interface{}) ([]interface{}, error))(stepArgs...)
+		stepOutput, stepError = step.Function(stepArgs...)
 		if stepError != nil {
 			if !step.SkipRetry && step.shouldRetry(stepError) && stepReAttemptsLeft > 0 {
 				// piping args as output for re-running same step
@@ -128,7 +95,7 @@ func (step Step) shouldRetry(err error) bool {
 	for _, errorToRetry := range step.ErrorsToRetry {
 		if step.StrictErrorCheck && err.Error() == errorToRetry.Error() {
 			return true
-		} else if !step.StrictErrorCheck && strings.Contains(err.Error(), errorToRetry.Error()) {
+		} else if !step.StrictErrorCheck && strings.Contains(errorToRetry.Error(), err.Error()) {
 			return true
 		}
 	}
@@ -145,4 +112,23 @@ func (step Step) resolveNextStep(stepName StepName) *Step {
 	}
 
 	return nil
+}
+
+func (step Step) resolveStepArguments(previousStepReturns []interface{}) []interface{} {
+	var resolvedStepArgs []interface{}
+
+	switch step.UseArguments {
+	case PreviousStepReturns:
+		resolvedStepArgs = previousStepReturns
+	case CurrentStepArgs:
+		resolvedStepArgs = step.StepArgs
+	case PreviousReturnsWithCurrentStepArgs:
+		resolvedStepArgs = append(resolvedStepArgs, previousStepReturns...)
+		resolvedStepArgs = append(resolvedStepArgs, step.StepArgs...)
+	default: // covers UseCurrentStepArgsWithPreviousReturns too
+		resolvedStepArgs = append(resolvedStepArgs, step.StepArgs...)
+		resolvedStepArgs = append(resolvedStepArgs, previousStepReturns...)
+	}
+
+	return resolvedStepArgs
 }
