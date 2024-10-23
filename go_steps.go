@@ -1,134 +1,157 @@
 package gosteps
 
 import (
-	"fmt"
-	"strings"
 	"time"
 )
 
-func (step *Step) Execute(initArgs ...any) ([]interface{}, error) {
-	// final output for step execution
-	var finalOutput []interface{}
+// var Xchannel = make(chan GoStepsCtx)
 
-	// initialize step output and step error
-	var stepOutput []interface{}
-	var stepError error
-
-	// no initial step or function
-	if step == nil || step.Function == nil {
-		return nil, nil
+func (rs *RootStep) Execute(c GoStepsContext) {
+	rootBranch := Branch{
+		BranchName: "root",
+		Steps:      rs.Steps,
 	}
 
-	// entry step
-	var isEntryStep bool = true
+	rootBranch.execute(c.getCtx())
+}
 
-	// step reattepts
-	var stepReAttemptsLeft int = step.MaxAttempts
+func (branch *Branch) execute(c GoStepsCtx) {
+	if branch.Steps == nil {
+		return
+	}
 
-	for {
-		// piping output from previous step as arguments for current step
-		var stepArgs []interface{}
+	branch.Steps.execute(c)
+}
 
-		// only runs for first step in step
-		if isEntryStep {
-			step.StepArgs = append(step.StepArgs, initArgs...)
-			isEntryStep = false
-		}
+func (step *Step) setProgress() *Step {
+	step.StepResult.runCount += 1
+	return step
+}
 
-		// resolve step arguments based on step.UseArguments
-		stepArgs = step.resolveStepArguments(stepOutput)
+func (step *Step) setResult(stepResult *StepResult) *Step {
+	step.StepResult = stepResult
+	return step
+}
 
-		// execute current step passing step arguments
-		stepOutput, stepError = step.Function(stepArgs...)
-		if stepError != nil {
-			if !step.SkipRetry && step.shouldRetry(stepError) && stepReAttemptsLeft > 0 {
-				// piping args as output for re-running same step
-				stepOutput = stepArgs
+func (step *Step) execute(c GoStepsCtx) {
+	if step.Function == nil {
+		return
+	}
 
-				// decrementing re-attempts left for current run
-				stepReAttemptsLeft -= 1
+	c.WithData(step.StepArgs)
+	step.setDefaults()
 
-				// sleep step.RetrySleep duration if set
-				if step.RetrySleep > 0 {
-					time.Sleep(step.RetrySleep)
-				}
+	stepResult := step.Function(c)
+	step.setResult(&stepResult)
 
-				continue
-			}
+	c.WithData(stepResult.StepData)
+	c.SetProgress(step.Name, stepResult)
 
-			// skip retry as step error not retryable
-			// return output of previous step and error
-			return stepArgs, stepError
-		}
+	step.setProgress()
 
-		// no next step, this is the final step
-		if step.NextStep == nil && step.PossibleNextSteps == nil {
-			finalOutput = stepOutput
-			return finalOutput, nil
-		}
+	// Xchannel <- c
+}
 
-		// next step is dependant on conditions
-		if step.PossibleNextSteps != nil && step.NextStepResolver != nil {
-			nextStepName := step.NextStepResolver.(func(...interface{}) string)(stepOutput...)
-			resolvedStep := step.resolveNextStep(StepName(nextStepName))
-			if resolvedStep == nil {
-				return stepOutput, fmt.Errorf(unresolvedStepError, step.Name)
-			}
-			step.NextStep = resolvedStep
-		}
+func (step *Step) setDefaults() {
+	if step.StepOpts.MaxRunAttempts == 0 {
+		step.StepOpts.MaxRunAttempts = 1
+	}
 
-		// set step as resolved or default nextStep
-		step = step.NextStep
-
-		// if step.MaxAttempts is not set, set default max value
-		if step.MaxAttempts < 1 {
-			step.MaxAttempts = DefaultMaxAttempts
-		}
-
-		// reset step re-attempts
-		stepReAttemptsLeft = step.MaxAttempts - 1
+	if step.StepOpts.RetryAllErrors {
+		step.StepOpts.ErrorsToRetry = nil
 	}
 }
 
-// should retry for error
-func (step Step) shouldRetry(err error) bool {
-	for _, errorToRetry := range step.ErrorsToRetry {
-		if step.StrictErrorCheck && err.Error() == errorToRetry.Error() {
-			return true
-		} else if !step.StrictErrorCheck && strings.Contains(errorToRetry.Error(), err.Error()) {
-			return true
-		}
+func (step *Step) sleep() {
+	if step.StepOpts.RetrySleep > 0 {
+		time.Sleep(step.StepOpts.RetrySleep)
 	}
-
-	return false
 }
 
-// resolve next step by step name
-func (step Step) resolveNextStep(stepName StepName) *Step {
-	for _, nextStep := range step.PossibleNextSteps {
-		if nextStep.Name == stepName {
-			return &nextStep
+func (steps *Steps) execute(c GoStepsCtx) {
+	s := *steps
+	if len(s) == 0 {
+		return
+	}
+
+	currentStepCounter := 0
+
+	var currentStep *Step = &s[currentStepCounter]
+	for currentStep != nil {
+		if currentStepCounter >= len(s) {
+			break
+		}
+
+		currentStep = &s[currentStepCounter]
+		currentStep.execute(c)
+
+		if currentStep.shouldRetry() {
+			currentStep.sleep()
+			continue
+		}
+
+		if currentStep.shouldExit() {
+			break
+		}
+
+		branches := currentStep.Branches
+		if branches != nil {
+			branchName := branches.Resolver(c)
+			branch := branches.getExecutableBranch(branchName)
+
+			if branch != nil {
+				branch.execute(c)
+			}
+		}
+
+		currentStepCounter += 1
+	}
+}
+
+func (branches *Branches) getExecutableBranch(branchName BranchName) *Branch {
+	for _, branch := range branches.Branches {
+		if branch.BranchName == branchName {
+			return &branch
 		}
 	}
 
 	return nil
 }
 
-func (step Step) resolveStepArguments(previousStepReturns []interface{}) []interface{} {
-	var resolvedStepArgs []interface{}
-
-	switch step.UseArguments {
-	case PreviousStepReturns:
-		resolvedStepArgs = previousStepReturns
-	case CurrentStepArgs:
-		resolvedStepArgs = step.StepArgs
-	case PreviousReturnsWithCurrentStepArgs:
-		resolvedStepArgs = append(resolvedStepArgs, previousStepReturns...)
-		resolvedStepArgs = append(resolvedStepArgs, step.StepArgs...)
-	default: // covers UseCurrentStepArgsWithPreviousReturns too
-		resolvedStepArgs = append(resolvedStepArgs, step.StepArgs...)
-		resolvedStepArgs = append(resolvedStepArgs, previousStepReturns...)
+// should retry for error
+func (step *Step) shouldRetry() bool {
+	if step.StepOpts.MaxRunAttempts == step.StepResult.runCount {
+		return false
 	}
 
-	return resolvedStepArgs
+	if step.StepResult.StepState == StepStatePending {
+		return true
+	}
+
+	if step.StepOpts.RetryAllErrors {
+		return true
+	}
+
+	if step.StepResult.StepState == StepStateError {
+		for _, errorToRetry := range step.StepOpts.ErrorsToRetry {
+			if errorToRetry == *step.StepResult.StepError {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+func (step *Step) shouldExit() bool {
+	if step.StepOpts.MaxRunAttempts == step.StepResult.runCount {
+		switch step.StepResult.StepState {
+		case StepStateComplete, StepStateSkipped:
+			return false
+		default: // StepStateError, StepStatePending, StepStateFailed
+			return true
+		}
+	}
+
+	return false
 }

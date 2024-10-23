@@ -170,8 +170,8 @@ To execute steps use the `Execute(initArgs ...any)` method, passing the (optiona
 
 ```go
 import (
-	gosteps "github.com/TanmoySG/go-steps"
-	funcs "github.com/TanmoySG/go-steps/example/funcs"
+	gosteps "github.com/TanmoySG/go-steps/v1"
+	funcs "github.com/TanmoySG/go-steps/v1/example/funcs"
 )
 
 func main() {

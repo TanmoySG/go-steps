@@ -12,19 +12,3 @@ const (
 	// the Max value is 9223372036854775807, which is not infinite but a huge number of attempts
 	MaxMaxAttempts = math.MaxInt
 )
-
-var (
-	// only previous step return will be passed to current step as arguments
-	PreviousStepReturns stepArgChainingType = "PreviousStepReturns"
-
-	// only current step arguments (StepArgs) will be passed to current step as arguments
-	CurrentStepArgs stepArgChainingType = "CurrentStepArgs"
-
-	// both previous step returns and current step arguments (StepArgs) will be passed
-	// to current step as arguments - previous step returns, followed by current step args,
-	PreviousReturnsWithCurrentStepArgs stepArgChainingType = "PreviousReturnsWithCurrentStepArgs"
-
-	// both previous step returns and current step arguments (StepArgs) will be passed
-	// to current step as arguments - current step args, followed by previous step returns
-	CurrentStepArgsWithPreviousReturns stepArgChainingType = "CurrentStepArgsWithPreviousReturns"
-)
