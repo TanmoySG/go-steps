@@ -19,12 +19,17 @@ type RootStep struct {
 
 // Step type defines a step with all configurations for the step
 type Step struct {
-	Name       StepName               `json:"name"`
-	Function   StepFn                 `json:"-"`
-	StepOpts   StepOpts               `json:"stepConfig"`
-	Branches   *Branches              `json:"branches"`
-	StepArgs   map[string]interface{} `json:"stepArgs"`
-	StepResult *StepResult            `json:"stepResult"`
+	Name            StepName               `json:"name"`
+	Function        StepFn                 `json:"-"`
+	StepOpts        StepOpts               `json:"stepConfig"`
+	Branches        *Branches              `json:"branches"`
+	StepArgs        map[string]interface{} `json:"stepArgs"`
+	StepResult      *StepResult            `json:"stepResult"`
+	stepRunProgress stepRunProgress        `json:"-"`
+}
+
+type stepRunProgress struct {
+	runCount int `json:"-"`
 }
 
 type Branch struct {

@@ -15,7 +15,6 @@ type StepResult struct {
 	StepState   StepState      `json:"stepState"`
 	StepMessage *string        `json:"stepMessage"`
 	StepError   *StepError     `json:"stepError,omitempty"`
-	runCount    int            `json:"-"`
 }
 
 type StepError struct {

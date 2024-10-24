@@ -23,9 +23,8 @@ func (branch *Branch) execute(c GoStepsCtx) {
 	branch.Steps.execute(c)
 }
 
-func (step *Step) setProgress() *Step {
-	step.StepResult.runCount += 1
-	return step
+func (step *Step) setProgress() {
+	step.stepRunProgress.runCount += 1
 }
 
 func (step *Step) setResult(stepResult *StepResult) *Step {
@@ -120,7 +119,7 @@ func (branches *Branches) getExecutableBranch(branchName BranchName) *Branch {
 
 // should retry for error
 func (step *Step) shouldRetry() bool {
-	if step.StepOpts.MaxRunAttempts == step.StepResult.runCount {
+	if step.StepOpts.MaxRunAttempts == step.stepRunProgress.runCount {
 		return false
 	}
 
@@ -144,7 +143,11 @@ func (step *Step) shouldRetry() bool {
 }
 
 func (step *Step) shouldExit() bool {
-	if step.StepOpts.MaxRunAttempts == step.StepResult.runCount {
+	if step.StepResult == nil {
+		return false
+	}
+
+	if step.StepOpts.MaxRunAttempts == step.stepRunProgress.runCount {
 		switch step.StepResult.StepState {
 		case StepStateComplete, StepStateSkipped:
 			return false
