@@ -1,6 +1,6 @@
 
 
-# GoSteps
+# GoSteps - `v1`
 
 GoSteps is a go library that helps in running functions as steps and reminds you to step out and get active (kidding!). 
 
@@ -8,7 +8,15 @@ GoSteps is a go library that helps in running functions as steps and reminds you
  <img src="https://upload.wikimedia.org/wikipedia/commons/b/b3/Go_gopher_pencil_running.jpg" alt="Sublime's custom image" width="300" height="300" />
 </p>
 
-The idea behind `gosteps` is to define set of functions as steps-chain (kind of a linked list) and execute them in a sequential fashion by piping output (other than error) from previous step, as arguments, into the next steps (not necessarily using the args).
+The idea behind `gosteps` is to define set of functions as chain-of-steps and execute them in a sequential fashion.
+
+> [!NOTE]
+> go-steps v1 is a breaking change and older v0 models wont work with the new version. For v0 documentation, examples refer to [v0.3.0-beta documentation](https://github.com/TanmoySG/go-steps/tree/v0.3.0-beta) or v0 guide [here](./v0/README.md).
+
+## Architecture
+
+A step-chain execution starts at a `Root Step`.
+
 
 ## Usage
 

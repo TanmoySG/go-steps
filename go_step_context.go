@@ -1,16 +1,21 @@
 package gosteps
 
-import (
-	"encoding/json"
-)
-
+// GoStepsCtxData type defines the data stored in the context
 type GoStepsCtxData map[string]interface{}
 
-type GoStepsCtx struct {
-	Data          GoStepsCtxData            `json:"data"`
-	StepsProgress map[StepName]StepProgress `json:"stepsProgress"`
+// StepProgress type defines the progress of the step
+type StepProgress struct {
+	StepName   StepName   `json:"stepName"`
+	StepResult StepResult `json:"stepResult"`
 }
 
+// GoStepsCtx type defines the context for the step-chain
+type GoStepsCtx struct {
+	data          GoStepsCtxData
+	stepsProgress map[StepName]StepProgress
+}
+
+// GoStepsContext interface defines the methods for the context
 type GoStepsContext interface {
 	getCtx() GoStepsCtx
 	SetData(key string, value interface{})
@@ -18,42 +23,39 @@ type GoStepsContext interface {
 	WithData(data map[string]interface{})
 }
 
+// GoStepsCtx type defines the context for the step-chain
 func NewGoStepsContext() GoStepsContext {
 	return GoStepsCtx{
-		Data:          GoStepsCtxData{},
-		StepsProgress: map[StepName]StepProgress{},
+		data:          GoStepsCtxData{},
+		stepsProgress: map[StepName]StepProgress{},
 	}
 }
 
-func (ctx GoStepsCtx) ToJson() (string, error) {
-	cBytes, err := json.Marshal(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	return string(cBytes), nil
-}
-
+// getCtx returns the context - not exported
 func (ctx GoStepsCtx) getCtx() GoStepsCtx {
 	return ctx
 }
 
+// SetData sets the data in the context
 func (ctx GoStepsCtx) SetData(key string, value interface{}) {
-	ctx.Data[key] = value
+	ctx.data[key] = value
 }
 
+// GetData gets the data from the context
 func (ctx GoStepsCtx) GetData(key string) interface{} {
-	return ctx.Data[key]
+	return ctx.data[key]
 }
 
+// WithData sets the data in the context
 func (ctx GoStepsCtx) WithData(data map[string]interface{}) {
 	for key, value := range data {
 		ctx.SetData(key, value)
 	}
 }
 
+// SetProgress sets the progress of the step
 func (ctx GoStepsCtx) SetProgress(step StepName, stepResult StepResult) GoStepsCtx {
-	ctx.StepsProgress[step] = StepProgress{
+	ctx.stepsProgress[step] = StepProgress{
 		StepName:   step,
 		StepResult: stepResult,
 	}
@@ -61,13 +63,7 @@ func (ctx GoStepsCtx) SetProgress(step StepName, stepResult StepResult) GoStepsC
 	return ctx
 }
 
+// GetProgress gets the progress of the step
 func (ctx GoStepsCtx) GetProgress(step StepName) StepProgress {
-	return ctx.StepsProgress[step]
+	return ctx.stepsProgress[step]
 }
-
-// func (ctx GoStepsCtx) SetStepRetires(stepName StepName) GoStepsCtx {
-// 	progress := ctx.StepsProgress[stepName]
-// 	progress.StepRetries += 1
-// 	ctx.StepsProgress[stepName] = progress
-// 	return ctx
-// }
