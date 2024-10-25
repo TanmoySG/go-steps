@@ -35,14 +35,14 @@ type Step struct {
 }
 ```
 
-| Field           | Description                                                                                            |
-|-----------------|--------------------------------------------------------------------------------------------------------|
-| Name            | Name of step                                                                                           |
-| Function        | The function to execute                                                                                |
-| StepOpts        | Options/Configurations of the step                                                                     |
-| Branches        | Branches are a sequentially executable collection of  steps.                                           |
-| StepArgs        | Any additional arguments need to pass to  the step.                                                    |
-| StepResult      | The results - status, message, errors are defined in StepResult                                        |
+| Field      | Description                                                                                                |
+|------------|------------------------------------------------------------------------------------------------------------|
+| Name       | Name of step                                                                                               |
+| Function   | The function to execute                                                                                    |
+| StepOpts   | Options/Configurations of the step                                                                         |
+| Branches   | Branches are a sequentially executable collection of  steps.                                               |
+| StepArgs   | Any additional arguments need to pass to  the step.                                                        |
+| StepResult | The results - statues of step, message returned by the step function and, errors are defined in StepResult |
 
 **StepOpts**
 
