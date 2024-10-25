@@ -1,68 +1,177 @@
 
+# GoSteps - `v1`
 
-# GoSteps
-
-GoSteps is a go library that helps in running functions as steps and reminds you to step out and get active (kidding!). 
+GoSteps is a go library that helps in running functions as steps and reminds you to step out and get active (kidding!).
 
 <p align="center">
  <img src="https://upload.wikimedia.org/wikipedia/commons/b/b3/Go_gopher_pencil_running.jpg" alt="Sublime's custom image" width="300" height="300" />
 </p>
 
-The idea behind `gosteps` is to define set of functions as steps-chain (kind of a linked list) and execute them in a sequential fashion by piping output (other than error) from previous step, as arguments, into the next steps (not necessarily using the args).
+The idea behind `gosteps` is to define set of functions as chain-of-steps and execute them in a sequential fashion.
+
+> [!NOTE]
+> go-steps v1 is a breaking change and older v0 models wont work with the new version. For v0 documentation, examples refer to [v0.3.0-beta documentation](https://github.com/TanmoySG/go-steps/tree/v0.3.0-beta) or v0 guide [here](./v0/README.md).
 
 ## Usage
 
-The `Step` type contains the requirments to execute a step function and move to next one.
+`Functions` that needs execution are defined as a `Step`, and each step is a part of a collection of multiple Steps called `Branch`, that runs sequentially. Each step can have multiple `Branches` as possible next steps, and the branch to be executed is determined based on a `ResolverFuntion` of that step.
+
+### Types
+
+Different `types` defined in GoSteps are required to create a step chain.
+
+#### Step
+
+The `Step` type contains the requirments to execute a step function and is a part of a Branch.
 
 ```go
 type Step struct {
-	Name              StepName
-	Function          StepFn
-	UseArguments      stepArgChainingType
-	StepArgs          []interface{}
-	NextStep          *Step
-	PossibleNextSteps PossibleNextSteps
-	NextStepResolver  interface{}
-	ErrorsToRetry     []error
-	StrictErrorCheck  bool
-	SkipRetry         bool
-	MaxAttempts       int
-	RetrySleep        time.Duration
+ Name            StepName               `json:"name"`
+ Function        StepFn                 `json:"-"`
+ StepOpts        StepOpts               `json:"stepConfig"`
+ Branches        *Branches              `json:"branches"`
+ StepArgs        map[string]interface{} `json:"stepArgs"`
+ StepResult      *StepResult            `json:"stepResult"`
 }
-
 ```
 
-| Field             | Description                                                                                                                  |
-|-------------------|------------------------------------------------------------------------------------------------------------------------------|
-| Name              | Name of step                                                                                                                 |
-| Function          | The function to execute                                                                                                      |
-| StepArgs          | any additional arguments need to pass to te step                                                                             |
-| UseArguments      | Choosing Arguments to Use from previous step's return or current step's arguments or both.                                   |
-| NextStep          | Next Step for the current step. If next step needs to be conditional dont set this and use `PossibleNextSteps` field instead |
-| PossibleNextSteps | Candidate functions for next step (pick from multiple possible next steps based on condition)                                |
-| NextStepResolver  | A function that returns the step name, based on conditions, that is used to pick the NextStep from PossibleNextSteps         |
-| ErrorsToRetry     | A list of error to retry step for                                                                                            |
-| StrictErrorCheck  | If set to `true` exact error is matched, else only presence of error is checked                                              |
-| SkipRetry         | If set to `true` step is not retried for any error                                                                           |
-| MaxAttempts       | Max attempts are the number of times the step is tried (first try + subsequent retries). If not set, it'll run 100 times     |
-| RetrySleep        | Sleep duration (type time.Duration) between each re-attempts                                                                 |                                                                |
+| Field           | Description                                                     |
+|-----------------|-----------------------------------------------------------------|
+| Name            | Name of step                                                    |
+| Function        | The function to execute                                         |
+| StepOpts        | Options/Configurations of the step                              |
+| Branches        | Branches are a sequentially executable collection of  steps.    |
+| StepArgs        | Any additional arguments need to pass to  the step.             |
+| StepResult      | The results - status, message, errors are defined in StepResult |
 
-### Step Function
+##### StepOpts
 
-Define a step function using the following function signature. You can also use the  `StepFn` type.
+The `StepOpts` type contains the configurations/options for the step execution.
+
+```go
+type StepOpts struct {
+ ErrorsToRetry  []StepError   `json:"errorsToRetry"`
+ RetryAllErrors bool          `json:"retryAllErrors"`
+ MaxRunAttempts int           `json:"maxAttempts"`
+ RetrySleep     time.Duration `json:"retrySleep"`
+}
+```
+
+| Field          | Description                                                                                                          |
+|----------------|----------------------------------------------------------------------------------------------------------------------|
+| ErrorsToRetry  | a set of `StepError`s for which a step should be retried.                                                            |
+| RetryAllErrors | A boolean type flag which specifies if a step needs to retry for any error, irrespective of those in `ErrorsToRetry` |
+| MaxRunAttempts | Max attempts are the number of times the step is ran/executed (first run + retries). If not set, it'll run once.     |
+| RetrySleep     | Sleep duration (type time.Duration) between each re-attempts                                                         |
+
+##### Function
+
+Defines a step function  of type  `StepFn`.
 
 ```go
 // StepFn Type
-type StepFn func(...interface{}) ([]interface{}, error)
+type StepFn func(ctx GoStepsCtx) StepResult
 
-// sample Step function
-func Add(args ...any) ([]interface{}, error) {
-	fmt.Printf("Adding %v\n", args)
-	return []interface{}{args[0].(int) + args[1].(int)}, nil
+// sample function
+func Add(ctx GoStepsCtx) StepResult {
+  // do something
+ return gosteps.MarkStateComplete()
+}
+```
+
+#### Branch
+
+The `Branch` type is a collection of steps that are to be executed sequentially.
+
+```go
+// Steps type - array of Step
+type Steps []Step
+
+type Branch struct {
+ BranchName BranchName `json:"branchName"`
+ Steps      Steps      `json:"steps"`
+}
+```
+
+| Field      | Description                                                                                            |
+|------------|--------------------------------------------------------------------------------------------------------|
+| BranchName | Name of the branch                                                                                     |
+| Steps      | Steps are a collection of steps that are to be executed sequentially. It is a array of Step (`[]Step`) |
+
+##### Branches
+
+The `Branches` type contains an array of branch that are exececuted conditionally, and resolver function that determines the branch to be executed.
+
+```go
+type Branches struct {
+ Branches []Branch   `json:"branches"`
+ Resolver ResolverFn `json:"-"`
+}
+```
+
+| Field    | Description                                                                                           |
+|----------|-------------------------------------------------------------------------------------------------------|
+| Branches | Branches are a collection of branches that are to be executed conditionally. It is an array of Branch |
+| Resolver | Resolver function to determine the branch to be executed.                                             |
+
+##### ResolverFn
+
+The `ResolverFn` type is a function that determines the branch to be executed.
+
+```go
+// ResolverFn Type
+type ResolverFn func(ctx GoStepsCtx) BranchName
+
+// sample resolver function
+func nextStepResolver(ctx GoStepsCtx) BranchName {
+ // do something
+ return "branchName"
 }
 ```
 
 To see all the `types` available in go-steps see [`types.go`](./go_step_types.go)
+
+### GoStep Context
+
+`GoStepsCtx` is a custom context type, instance of which is passed between steps to store and share data, progress, state, etc between steps and branches.
+
+```go
+type GoStepsCtx struct {
+ Data          GoStepsCtxData            `json:"data"`
+ StepsProgress map[StepName]StepProgress `json:"stepsProgress"`
+}
+
+// creating a new context
+ctx := gosteps.NewGoStepsContext()
+```
+
+| Field         | Description                                                                                          |
+|---------------|------------------------------------------------------------------------------------------------------|
+| Data          | Data is a map of key-value pairs that can be used to store and share data between steps and branches |
+| StepsProgress | StepsProgress is a map of StepName and StepProgress that stores the progress of each step            |
+
+#### GoStepCtx functions: SetData, GetData and WithData
+
+To set data in the context, use the `SetData` method.
+
+```go
+ctx.SetData("key", "value")
+```
+
+To get data from the context, use the `GetData` method.
+
+```go
+value, ok := ctx.GetData("key")
+```
+
+To set multiple key-value pair in the context, use the `WithData` method that expects K-V data to be of type `map[string]interface{}`.  
+
+```go
+ctx.WithData(map[string]interface{}{
+ "key1": "value1",
+ "key2": "value2",
+})
+```
 
 ### Defining Steps
 
@@ -70,14 +179,14 @@ To define steps, use the `gosteps.Step` type and link the next steps in the `Nex
 
 ```go
 var steps = gosteps.Step{
-	Name: "add",
-	Function: funcs.Add,
-	StepArgs: []interface{}{2, 3},
-	NextStep: gosteps.Steps{
-		Name: "sub",
-		Function:       funcs.Sub,
-		StepArgs: []interface{}{4},
-	},
+ Name: "add",
+ Function: funcs.Add,
+ StepArgs: []interface{}{2, 3},
+ NextStep: gosteps.Steps{
+  Name: "sub",
+  Function:       funcs.Sub,
+  StepArgs: []interface{}{4},
+ },
 }
 ```
 
@@ -85,9 +194,9 @@ Here the first step is `Add` and next step (and final) is `Sub`, so the output o
 
 ### Choosing Arguments to Use
 
-Arguments to use in the current step function's execution is determined using the previous step returned values and the current step arguments specified. 
+Arguments to use in the current step function's execution is determined using the previous step returned values and the current step arguments specified.
 
-You can choose if you want to use previous step returned values as arguments to current step, or you want to use only current step arguments or both. You can also choose the order in which the returns from previous step, and step arguments are passed as arguments. 
+You can choose if you want to use previous step returned values as arguments to current step, or you want to use only current step arguments or both. You can also choose the order in which the returns from previous step, and step arguments are passed as arguments.
 
 This can be done so by passing the "strategy" to the `UseArguments` field. There are four directives defined in the library
 
@@ -108,17 +217,18 @@ This can be done so by passing the "strategy" to the `UseArguments` field. There
 ```
 
 These values can be used in the step chain as
+
 ```go
 var steps = gosteps.Step{
-	Name: "add",
-	Function: funcs.Add,
-	StepArgs: []interface{}{2, 3},
-	NextStep: gosteps.Steps{
-		Name: "sub",
-		Function:       funcs.Sub,
-		StepArgs: []interface{}{4, 6},
-		UseArguments: gosteps.CurrentStepArgs,
-	},
+ Name: "add",
+ Function: funcs.Add,
+ StepArgs: []interface{}{2, 3},
+ NextStep: gosteps.Steps{
+  Name: "sub",
+  Function:       funcs.Sub,
+  StepArgs: []interface{}{4, 6},
+  UseArguments: gosteps.CurrentStepArgs,
+ },
 }
 ```
 
@@ -128,23 +238,23 @@ Some steps might have multiple candidates for next step and the executable next 
 
 ```go
 PossibleNextSteps: gosteps.Step{
-	Function:       funcs.Add,
-		StepArgs: []interface{}{2},
-		NextStep: &gosteps.Step{
-			Function:         funcs.Sub,
-			StepArgs:   []interface{}{4},
-			NextStepResolver: nextStepResolver,
-			PossibleNextSteps: gosteps.PossibleNextSteps{
-				{
-					Name:           "multiply",
-					Function:       funcs.Multiply,
-				},
-				{
-				Name:           "divide",
-					Function:       funcs.Divide,
-				},
-			}
-	}
+ Function:       funcs.Add,
+  StepArgs: []interface{}{2},
+  NextStep: &gosteps.Step{
+   Function:         funcs.Sub,
+   StepArgs:   []interface{}{4},
+   NextStepResolver: nextStepResolver,
+   PossibleNextSteps: gosteps.PossibleNextSteps{
+    {
+     Name:           "multiply",
+     Function:       funcs.Multiply,
+    },
+    {
+    Name:           "divide",
+     Function:       funcs.Divide,
+    },
+   }
+ }
 }
 ```
 
@@ -154,13 +264,13 @@ The resolver function should be of type `func(args ...any) string`, where `args`
 
 ```go
 func nextStepResolver(args ...any) string {
-	if args[0].(int) < 5 {
-		fmt.Printf("StepResolver [%v]: Arguments is Negative, going with Multiply\n", args)
-		return "add"
-	}
+ if args[0].(int) < 5 {
+  fmt.Printf("StepResolver [%v]: Arguments is Negative, going with Multiply\n", args)
+  return "add"
+ }
 
-	fmt.Printf("StepResolver [%v]: Arguments is Positive, going with Divide\n", args)
-	return "sub"
+ fmt.Printf("StepResolver [%v]: Arguments is Positive, going with Divide\n", args)
+ return "sub"
 }
 ```
 
@@ -170,18 +280,18 @@ To execute steps use the `Execute(initArgs ...any)` method, passing the (optiona
 
 ```go
 import (
-	gosteps "github.com/TanmoySG/go-steps/v1"
-	funcs "github.com/TanmoySG/go-steps/v1/example/funcs"
+ gosteps "github.com/TanmoySG/go-steps/v1"
+ funcs "github.com/TanmoySG/go-steps/v1/example/funcs"
 )
 
 func main() {
-	initArgs := []interface{}{1, 2}
-	finalOutput, err := steps.Execute(initArgs...)
-	if err != nil {
-		fmt.Printf("error executing steps: %s, final output: [%s]\n", err, finalOutput)
-	}
+ initArgs := []interface{}{1, 2}
+ finalOutput, err := steps.Execute(initArgs...)
+ if err != nil {
+  fmt.Printf("error executing steps: %s, final output: [%s]\n", err, finalOutput)
+ }
 
-	fmt.Printf("Final Output: [%v]\n", finalOutput)
+ fmt.Printf("Final Output: [%v]\n", finalOutput)
 }
 ```
 
@@ -191,12 +301,12 @@ To retry a step for particular erors, use the `ErrorsToRetry` field passing the 
 
 ```go
 {
-	ErrorsToRetry: []error{
-		fmt.Errorf("error to retry"),
-	},
-	StrictErrorCheck: true,
-	MaxAttempts: 5,
-	RetrySleep:  1 * time.Second,
+ ErrorsToRetry: []error{
+  fmt.Errorf("error to retry"),
+ },
+ StrictErrorCheck: true,
+ MaxAttempts: 5,
+ RetrySleep:  1 * time.Second,
 }
 ```
 
@@ -215,7 +325,7 @@ Here all arguments passed to the step function need to be type asserted within t
 
 ```go
 func Multiply(args ...any) ([]interface{}, error) {
-	return []interface{}{args[0].(int) * args[1].(int)}, nil
+ return []interface{}{args[0].(int) * args[1].(int)}, nil
 }
 ```
 
