@@ -161,7 +161,7 @@ ctx.SetData("key", "value")
 To get data from the context, use the `GetData` method.
 
 ```go
-value, ok := ctx.GetData("key")
+value := ctx.GetData("key")
 ```
 
 To set multiple key-value pair in the context, use the `WithData` method that expects K-V data to be of type `map[string]interface{}`.  
