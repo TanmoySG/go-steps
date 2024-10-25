@@ -44,7 +44,7 @@ type Step struct {
 | StepArgs        | Any additional arguments need to pass to  the step.             |
 | StepResult      | The results - status, message, errors are defined in StepResult |
 
-##### StepOpts
+**StepOpts**
 
 The `StepOpts` type contains the configurations/options for the step execution.
 
@@ -64,7 +64,7 @@ type StepOpts struct {
 | MaxRunAttempts | Max attempts are the number of times the step is ran/executed (first run + retries). If not set, it'll run once.     |
 | RetrySleep     | Sleep duration (type time.Duration) between each re-attempts                                                         |
 
-##### Function
+**Function**
 
 Defines a step function  of type  `StepFn`.
 
@@ -98,7 +98,7 @@ type Branch struct {
 | BranchName | Name of the branch                                                                                     |
 | Steps      | Steps are a collection of steps that are to be executed sequentially. It is a array of Step (`[]Step`) |
 
-##### Branches
+**Branches**
 
 The `Branches` type contains an array of branch that are exececuted conditionally, and resolver function that determines the branch to be executed.
 
@@ -114,7 +114,7 @@ type Branches struct {
 | Branches | Branches are a collection of branches that are to be executed conditionally. It is an array of Branch |
 | Resolver | Resolver function to determine the branch to be executed.                                             |
 
-##### ResolverFn
+**ResolverFn**
 
 The `ResolverFn` type is a function that determines the branch to be executed.
 
