@@ -357,6 +357,10 @@ gosteps.StepOpts{
 }
 ```
 
+### Example
+
+Sample code can be found in the [example](./example/) directory.
+
 ### Help!
 
 If you want to help fix the above constraint or other bugs/issues, feel free to raise an Issue or Pull Request with the changes. It'd be an immense help!
