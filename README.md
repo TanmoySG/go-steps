@@ -20,6 +20,8 @@ The idea behind `gosteps` is to define set of functions as chain-of-steps and ex
 
 Different `types` defined in GoSteps are required to create a step chain.
 
+![GoSteps Types](./go-step-arch.jpg)
+
 #### Step
 
 The `Step` type contains the requirments to execute a step function and is a part of a Branch.
