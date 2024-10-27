@@ -71,7 +71,7 @@ func (branch *Branch) ToJson() (string, error) {
 	return string(stepsBytes), nil
 }
 
-// NewGoStepChain creates a new root branch of the step-chain
+// NewStepChain creates a new root branch of the step-chain
 func NewStepChain(steps Steps) *Branch {
 	return &Branch{
 		BranchName: "root",

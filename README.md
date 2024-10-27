@@ -18,7 +18,7 @@ The idea behind `gosteps` is to define set of functions as chain-of-steps and ex
 ### Installation
 
 ```bash 
-go get github.com/TanmoySG/go-steps@v1
+go get github.com/TanmoySG/go-steps
 ```
 
 ### Types
