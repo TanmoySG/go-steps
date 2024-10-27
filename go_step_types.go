@@ -1,31 +1,68 @@
 package gosteps
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 // StepName type defined the name of the step
 type StepName string
+type BranchName string
 
 // StepFn type defines the Step's Function
-type StepFn func(...interface{}) ([]interface{}, error)
+type StepFn func(ctx GoStepsCtx) StepResult
+type ResolverFn func(ctx GoStepsCtx) BranchName
 
-// PossibleNextSteps type is a list/array of Step objects
-type PossibleNextSteps []Step
+type RootStep struct {
+	Steps Steps `json:"steps"`
+}
 
 // Step type defines a step with all configurations for the step
 type Step struct {
-	Name              StepName
-	Function          StepFn
-	UseArguments      stepArgChainingType
-	StepArgs          []interface{}
-	NextStep          *Step
-	PossibleNextSteps PossibleNextSteps
-	NextStepResolver  interface{}
-	ErrorsToRetry     []error
-	StrictErrorCheck  bool
-	SkipRetry         bool
-	MaxAttempts       int
-	RetrySleep        time.Duration
+	Name            StepName               `json:"name"`
+	Function        StepFn                 `json:"-"`
+	StepOpts        StepOpts               `json:"stepConfig"`
+	Branches        *Branches              `json:"branches"`
+	StepArgs        map[string]interface{} `json:"stepArgs"`
+	StepResult      *StepResult            `json:"stepResult"` // make this private
+	stepRunProgress stepRunProgress        `json:"-"`
 }
 
-// enum type for step arguments chaining
-type stepArgChainingType string
+type stepRunProgress struct {
+	runCount int `json:"-"`
+}
+
+type Branch struct {
+	BranchName BranchName `json:"branchName"`
+	Steps      Steps      `json:"steps"`
+}
+
+type Steps []Step
+
+type Branches struct {
+	Branches []Branch   `json:"branches"`
+	Resolver ResolverFn `json:"-"`
+}
+
+// step options
+type StepOpts struct {
+	ErrorsToRetry  []StepError   `json:"errorsToRetry"`
+	RetryAllErrors bool          `json:"retryAllErrors"`
+	MaxRunAttempts int           `json:"maxAttempts"`
+	RetrySleep     time.Duration `json:"retrySleep"`
+}
+
+func (root *RootStep) ToJson() (string, error) {
+	stepsBytes, err := json.Marshal(root)
+	if err != nil {
+		return "", err
+	}
+
+	return string(stepsBytes), nil
+}
+
+func NewGoStepsRunner(steps Steps) *RootStep {
+	return &RootStep{
+		Steps: steps,
+	}
+}
