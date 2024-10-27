@@ -25,7 +25,7 @@ type Step struct {
 	StepOpts        StepOpts               `json:"stepConfig"`
 	Branches        *Branches              `json:"branches"`
 	StepArgs        map[string]interface{} `json:"stepArgs"`
-	StepResult      *StepResult            `json:"stepResult"`
+	StepResult      *StepResult            `json:"stepResult"` // make this private
 	stepRunProgress stepRunProgress        `json:"-"`
 }
 
@@ -72,7 +72,7 @@ func (branch *Branch) ToJson() (string, error) {
 }
 
 // NewGoStepChain creates a new root branch of the step-chain
-func NewGoStepChain(steps Steps) *Branch {
+func NewStepChain(steps Steps) *Branch {
 	return &Branch{
 		BranchName: "root",
 		Steps:      steps,

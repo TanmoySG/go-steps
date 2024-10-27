@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	gosteps "github.com/TanmoySG/go-steps/v1"
+	gosteps "github.com/TanmoySG/go-steps"
 )
 
 func main() {
@@ -107,7 +107,6 @@ func main() {
 		},
 	}
 
-	stepChain := gosteps.NewGoStepChain(steps)
-
+	stepChain := gosteps.NewStepChain(steps)
 	stepChain.Execute(ctx)
 }
