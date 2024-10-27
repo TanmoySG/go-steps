@@ -24,7 +24,7 @@ type Step struct {
 	StepOpts        StepOpts               `json:"stepConfig"`
 	Branches        *Branches              `json:"branches"`
 	StepArgs        map[string]interface{} `json:"stepArgs"`
-	StepResult      *StepResult            `json:"stepResult"`
+	StepResult      *StepResult            `json:"stepResult"` // make this private
 	stepRunProgress stepRunProgress        `json:"-"`
 }
 
@@ -59,4 +59,10 @@ func (root *RootStep) ToJson() (string, error) {
 	}
 
 	return string(stepsBytes), nil
+}
+
+func NewGoStepsRunner(steps Steps) *RootStep {
+	return &RootStep{
+		Steps: steps,
+	}
 }

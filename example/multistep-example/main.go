@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	gosteps "github.com/TanmoySG/go-steps/v1"
+	gosteps "github.com/TanmoySG/go-steps"
 )
 
 func main() {
