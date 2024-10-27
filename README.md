@@ -16,6 +16,12 @@ The idea behind `gosteps` is to define set of functions as chain-of-steps and ex
 
 `Functions` that needs execution are defined as a `Step`, and each step is a part of a collection of multiple Steps called `Branch`, that runs sequentially. Each step can have multiple `Branches` as possible next steps, and the branch to be executed is determined based on a `ResolverFuntion` of that step.
 
+### Installation
+
+```bash 
+go get github.com/TanmoySG/go-steps@v1
+```
+
 ### Types
 
 Different `types` defined in GoSteps are required to create a step chain.

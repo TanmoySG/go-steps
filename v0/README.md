@@ -10,6 +10,12 @@ GoSteps is a go library that helps in running functions as steps and reminds you
 
 The idea behind `gosteps` is to define set of functions as steps-chain (kind of a linked list) and execute them in a sequential fashion by piping output (other than error) from previous step, as arguments, into the next steps (not necessarily using the args).
 
+Install the library using
+
+```sh
+go get github.com/TanmoySG/go-steps@v0.3.0-beta
+```
+
 ## Usage
 
 The `Step` type contains the requirments to execute a step function and move to next one.

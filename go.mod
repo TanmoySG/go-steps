@@ -1,3 +1,3 @@
-module github.com/TanmoySG/go-steps/v1
+module github.com/TanmoySG/go-steps
 
 go 1.18
