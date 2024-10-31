@@ -1,0 +1,30 @@
+name: Go CI
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    branches:
+      - "main"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.18"
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Test
+        run: |
+          echo '### CI Summary 📋' >> $GITHUB_STEP_SUMMARY
+          go test $(go list ./... | grep -v /example/)  -coverpkg=./... -coverprofile ./coverage.out
+          go tool cover -func ./coverage.out
+          go tool cover -func ./coverage.out >> $GITHUB_STEP_SUMMARY
