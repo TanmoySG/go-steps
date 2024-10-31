@@ -1,5 +1,4 @@
-
-# GoSteps - `v1`
+# GoSteps - `v1
 
 GoSteps is a go library that helps in running functions as steps and reminds you to step out and get active (kidding!).
 
@@ -34,12 +33,12 @@ The `Step` type contains the requirments to execute a step function and is a par
 
 ```go
 type Step struct {
- Name            StepName               `json:"name"`
- Function        StepFn                 `json:"-"`
- StepOpts        StepOpts               `json:"stepConfig"`
- Branches        *Branches              `json:"branches"`
- StepArgs        map[string]interface{} `json:"stepArgs"`
- StepResult      *StepResult            `json:"stepResult"`
+  Name            StepName               `json:"name"`
+  Function        StepFn                 `json:"-"`
+  StepOpts        StepOpts               `json:"stepConfig"`
+  Branches        *Branches              `json:"branches"`
+  StepArgs        map[string]interface{} `json:"stepArgs"`
+  StepResult      *StepResult            `json:"stepResult"`
 }
 ```
 
@@ -58,10 +57,10 @@ The `StepOpts` type contains the configurations/options for the step execution.
 
 ```go
 type StepOpts struct {
- ErrorsToRetry  []StepError   `json:"errorsToRetry"`
- RetryAllErrors bool          `json:"retryAllErrors"`
- MaxRunAttempts int           `json:"maxAttempts"`
- RetrySleep     time.Duration `json:"retrySleep"`
+  ErrorsToRetry  []StepError   `json:"errorsToRetry"`
+  RetryAllErrors bool          `json:"retryAllErrors"`
+  MaxRunAttempts int           `json:"maxAttempts"`
+  RetrySleep     time.Duration `json:"retrySleep"`
 }
 
 // example step
@@ -92,7 +91,7 @@ type StepFn func(ctx GoStepsCtx) StepResult
 // example function
 func Add(ctx GoStepsCtx) StepResult {
   // do something
- return gosteps.MarkStateComplete()
+  return gosteps.MarkStateComplete()
 }
 ```
 
@@ -105,8 +104,8 @@ The `Branch` type is a collection of steps that are to be executed sequentially.
 type Steps []Step
 
 type Branch struct {
- BranchName BranchName `json:"branchName"`
- Steps      Steps      `json:"steps"`
+  BranchName BranchName `json:"branchName"`
+  Steps      Steps      `json:"steps"`
 }
 
 // example branch
@@ -136,8 +135,8 @@ The `Branches` type contains an array of branch that are exececuted conditionall
 
 ```go
 type Branches struct {
- Branches []Branch   `json:"branches"`
- Resolver ResolverFn `json:"-"`
+  Branches []Branch   `json:"branches"`
+  Resolver ResolverFn `json:"-"`
 }
 
 // example branches
@@ -181,8 +180,8 @@ type ResolverFn func(ctx GoStepsCtx) BranchName
 
 // example resolver function
 func nextStepResolver(ctx GoStepsCtx) BranchName {
- // do something
- return "branchName"
+  // do something
+  return "branchName"
 }
 ```
 
@@ -194,8 +193,8 @@ To see all the `types` available in go-steps see [`types.go`](./go_step_types.go
 
 ```go
 type GoStepsCtx struct {
- Data          GoStepsCtxData            `json:"data"`
- StepsProgress map[StepName]StepProgress `json:"stepsProgress"`
+  Data          GoStepsCtxData            `json:"data"`
+  StepsProgress map[StepName]StepProgress `json:"stepsProgress"`
 }
 
 // creating a new context
@@ -237,23 +236,23 @@ These functions can be used within Step Functions and Resolver Functions to stor
 To define a step chain, create a Branch with the list of Steps to be run sequentially. Use the `gosteps.Steps` type or `[]gosteps.Step` type to define the steps and pass it to the `NewGoStepsRunner` method, which returns the executable step chain instance.
 
 ```go
- root := gosteps.NewGoStepsRunner(steps)
+root := gosteps.NewGoStepsRunner(steps)
 ```
 
 To execute the step chain use the `Execute` method, passing the context.
 
 ```go
- ctx := gosteps.NewGoStepsContext()
- root.Execute(ctx)
+ctx := gosteps.NewGoStepsContext()
+root.Execute(ctx)
 ```
 
 You can initialize GoStepsCtx with data using the `WithData` method, too.
 
 ```go
- ctx := gosteps.NewGoStepsContext().WithData(map[string]interface{}{
+ctx := gosteps.NewGoStepsContext().WithData(map[string]interface{}{
   "key1": "value1",
   "key2": "value2",
- })
+})
 ```
 
 ### Step Function results
@@ -262,21 +261,21 @@ The step function must return a `StepResult` type, which contains the status of 
 
 ```go
 type StepResult struct {
- StepData    GoStepsCtxData `json:"stepData"`
- StepState   StepState      `json:"stepState"`
- StepMessage *string        `json:"stepMessage"`
- StepError   *StepError     `json:"stepError,omitempty"`
+  StepData    GoStepsCtxData `json:"stepData"`
+  StepState   StepState      `json:"stepState"`
+  StepMessage *string        `json:"stepMessage"`
+  StepError   *StepError     `json:"stepError,omitempty"`
 }
 ```
 
 GoSteps require a step function to return one of the following states.
 
 ```go
- StepStateComplete StepState = "StepStateComplete" // step completed successfully
- StepStateFailed   StepState = "StepStateFailed"   // step failed to complete, without error
- StepStateSkipped  StepState = "StepStateSkipped"  // step was skipped
- StepStatePending  StepState = "StepStatePending"  // step is pending, should be retried
- StepStateError    StepState = "StepStateError"    // step failed to complete, with error
+StepStateComplete StepState = "StepStateComplete" // step completed successfully
+StepStateFailed   StepState = "StepStateFailed"   // step failed to complete, without error
+StepStateSkipped  StepState = "StepStateSkipped"  // step was skipped
+StepStatePending  StepState = "StepStatePending"  // step is pending, should be retried
+StepStateError    StepState = "StepStateError"    // step failed to complete, with error
 ```
 
 Functions are defined to return the state of the step, and the message and error are optional. If the step is failed, the error should be returned.
@@ -325,18 +324,18 @@ stepWithBranches := gosteps.Step{
   Function: Function,
   Branches: &gosteps.Branches{
     Resolver: func(ctx gosteps.GoStepsCtx) gosteps.BranchName {
-     // do something
-     return gosteps.BranchName("branch1")
+      // do something
+      return gosteps.BranchName("branch1")
     },
     Branches: []gosteps.Branch{
-    {
-      BranchName: "branch1",
-      Steps:      gosteps.Steps{ /* steps */ },
-    },
-    {
-      BranchName: "branch2",
-      Steps:      gosteps.Steps{ /* steps */ },
-     },
+      {
+        BranchName: "branch1",
+        Steps:      gosteps.Steps{ /* steps */ },
+      },
+      {
+        BranchName: "branch2",
+        Steps:      gosteps.Steps{ /* steps */ },
+      },
     },
   },
 }

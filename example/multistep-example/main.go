@@ -107,9 +107,6 @@ func main() {
 		},
 	}
 
-	root := gosteps.RootStep{
-		Steps: steps,
-	}
-
-	root.Execute(ctx)
+	stepChain := gosteps.NewStepChain(steps)
+	stepChain.Execute(ctx)
 }
