@@ -20,7 +20,7 @@ func (step *Step) setProgress() {
 
 // setResult sets the result of the executed step
 func (step *Step) setResult(stepResult *StepResult) *Step {
-	step.StepResult = stepResult
+	step.stepResult = stepResult
 	return step
 }
 
@@ -113,12 +113,29 @@ func (branches *Branches) getExecutableBranch(branchName BranchName) *Branch {
 }
 
 // shouldRetry checks if the step should be retried
+// retry steps, if:
+//   - step state is pending
+//   - step state is error and RetryAllErrors is true
+//   - step state is error and error is in ErrorsToRetry
+//   - step run count is less than MaxRunAttempts
+//
+// skip retry if:
+//   - step state is failed, complete or skipped
+//   - step run count is equal to MaxRunAttempts
 func (step *Step) shouldRetry() bool {
 	if step.StepOpts.MaxRunAttempts == step.stepRunProgress.runCount {
 		return false
 	}
 
-	if step.StepResult.StepState == StepStatePending {
+	if step.stepResult == nil {
+		return false
+	}
+
+	if step.stepResult.StepState == StepStateFailed {
+		return false
+	}
+
+	if step.stepResult.StepState == StepStatePending {
 		return true
 	}
 
@@ -126,9 +143,9 @@ func (step *Step) shouldRetry() bool {
 		return true
 	}
 
-	if step.StepResult.StepState == StepStateError {
+	if step.stepResult.StepState == StepStateError {
 		for _, errorToRetry := range step.StepOpts.ErrorsToRetry {
-			if errorToRetry == *step.StepResult.StepError {
+			if errorToRetry == *step.stepResult.StepError {
 				return true
 			}
 		}
@@ -140,12 +157,12 @@ func (step *Step) shouldRetry() bool {
 // shouldExit checks if the step should exists
 // and step-chain execution should be stopped
 func (step *Step) shouldExit() bool {
-	if step.StepResult == nil {
+	if step.stepResult == nil {
 		return false
 	}
 
 	if step.StepOpts.MaxRunAttempts == step.stepRunProgress.runCount {
-		switch step.StepResult.StepState {
+		switch step.stepResult.StepState {
 		case StepStateComplete, StepStateSkipped:
 			return false
 		default: // StepStateError, StepStatePending, StepStateFailed

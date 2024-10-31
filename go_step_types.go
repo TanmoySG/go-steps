@@ -25,13 +25,13 @@ type Step struct {
 	StepOpts        StepOpts               `json:"stepConfig"`
 	Branches        *Branches              `json:"branches"`
 	StepArgs        map[string]interface{} `json:"stepArgs"`
-	StepResult      *StepResult            `json:"stepResult"` // make this private
-	stepRunProgress stepRunProgress        `json:"-"`
+	stepResult      *StepResult            `json:"-"`
+	stepRunProgress StepRunProgress        `json:"-"`
 }
 
 // stepRunProgress type defines the progress of the step
 // it contains the run/execution count of each step
-type stepRunProgress struct {
+type StepRunProgress struct {
 	runCount int `json:"-"`
 }
 
