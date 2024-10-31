@@ -7,6 +7,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var (
+	stepError1 = StepError{
+		StepErrorNameOrId: "error1",
+		StepErrorMessage:  "error1",
+	}
+)
+
 func Test_shouldRetry(t *testing.T) {
 
 	testCases := []struct {
