@@ -1,126 +1,390 @@
 package gosteps
 
-// import (
-// 	"fmt"
-// 	"testing"
+import (
+	"fmt"
+	"testing"
 
-// 	"github.com/stretchr/testify/assert"
-// )
+	"github.com/stretchr/testify/assert"
+)
 
-// func Test_resolveStepArguments(t *testing.T) {
+func Test_shouldRetry(t *testing.T) {
 
-// 	samplePreviousStepOutput := []interface{}{4}
-// 	sampleStepArgs := []interface{}{5}
+	testCases := []struct {
+		StrictErrorCheck    bool
+		Step                Step
+		ExpectedShouldRetry bool
+		ErrorToCheck        StepError
+	}{
+		{
+			Step: Step{
+				StepOpts: StepOpts{
+					MaxRunAttempts: 2,
+				},
+				stepResult: &StepResult{
+					StepState: StepStatePending,
+				},
+				stepRunProgress: StepRunProgress{
+					runCount: 1,
+				},
+			},
+			ExpectedShouldRetry: true,
+		},
+		{
+			Step: Step{
+				StepOpts: StepOpts{
+					MaxRunAttempts: 2,
+				},
+				stepRunProgress: StepRunProgress{
+					runCount: 2,
+				},
+			},
+			ExpectedShouldRetry: false,
+		},
+		{
+			Step: Step{
+				StepOpts: StepOpts{
+					MaxRunAttempts: 2,
+					RetryAllErrors: true,
+				},
+				stepRunProgress: StepRunProgress{
+					runCount: 1,
+				},
+				stepResult: &StepResult{
+					StepState: StepStateFailed,
+				},
+			},
+			ExpectedShouldRetry: false,
+		},
+		{
+			Step: Step{
+				StepOpts: StepOpts{
+					MaxRunAttempts: 2,
+					RetryAllErrors: true,
+				},
+				stepResult: nil,
+				stepRunProgress: StepRunProgress{
+					runCount: 1,
+				},
+			},
+			ExpectedShouldRetry: false,
+		},
+		{
+			Step: Step{
+				StepOpts: StepOpts{
+					MaxRunAttempts: 2,
+					RetryAllErrors: true,
+				},
+				stepResult: &StepResult{
+					StepState: StepStateError,
+				},
+				stepRunProgress: StepRunProgress{
+					runCount: 1,
+				},
+			},
+			ExpectedShouldRetry: true,
+		},
+		{
+			Step: Step{
+				StepOpts: StepOpts{
+					MaxRunAttempts: 2,
+					RetryAllErrors: false,
+					ErrorsToRetry: []StepError{
+						stepError1,
+					},
+				},
+				stepResult: &StepResult{
+					StepState: StepStateError,
+					StepError: &stepError1,
+				},
+				stepRunProgress: StepRunProgress{
+					runCount: 1,
+				},
+			},
+			ExpectedShouldRetry: true,
+		},
+		{
+			Step: Step{
+				StepOpts: StepOpts{
+					MaxRunAttempts: 2,
+				},
+				stepRunProgress: StepRunProgress{
+					runCount: 1,
+				},
+				stepResult: &StepResult{
+					StepState: StepStateComplete,
+				},
+			},
+			ExpectedShouldRetry: false,
+		},
+	}
 
-// 	testCases := []struct {
-// 		useArguments                  stepArgChainingType
-// 		stepArgs                      []interface{}
-// 		previousStepOutput            []interface{}
-// 		expectedResolvedStepArguments []interface{}
-// 	}{
-// 		{
-// 			useArguments:                  PreviousStepReturns,
-// 			stepArgs:                      sampleStepArgs,
-// 			previousStepOutput:            samplePreviousStepOutput,
-// 			expectedResolvedStepArguments: samplePreviousStepOutput,
-// 		},
-// 		{
-// 			useArguments:                  CurrentStepArgs,
-// 			stepArgs:                      sampleStepArgs,
-// 			previousStepOutput:            samplePreviousStepOutput,
-// 			expectedResolvedStepArguments: sampleStepArgs,
-// 		},
-// 		{
-// 			useArguments:                  PreviousReturnsWithCurrentStepArgs,
-// 			stepArgs:                      sampleStepArgs,
-// 			previousStepOutput:            samplePreviousStepOutput,
-// 			expectedResolvedStepArguments: []interface{}{4, 5},
-// 		},
-// 		{
-// 			useArguments:                  CurrentStepArgsWithPreviousReturns,
-// 			stepArgs:                      sampleStepArgs,
-// 			previousStepOutput:            samplePreviousStepOutput,
-// 			expectedResolvedStepArguments: []interface{}{5, 4},
-// 		},
-// 	}
+	for _, tc := range testCases {
 
-// 	for _, tc := range testCases {
-// 		step := Step{
-// 			StepArgs:     tc.stepArgs,
-// 			UseArguments: tc.useArguments,
-// 		}
+		shouldRetry := tc.Step.shouldRetry()
 
-// 		resolvedStepArgs := step.resolveStepArguments(tc.previousStepOutput)
+		assert.Equal(t, tc.ExpectedShouldRetry, shouldRetry)
+	}
+}
 
-// 		assert.Equal(t, tc.expectedResolvedStepArguments, resolvedStepArgs)
-// 	}
-// }
+func Test_shouldExit(t *testing.T) {
 
-// func Test_resolveNextStep(t *testing.T) {
-// 	step := Step{
-// 		PossibleNextSteps: PossibleNextSteps{
-// 			{
-// 				Name: StepName("stepA"),
-// 			},
-// 			{
-// 				Name: StepName("stepB"),
-// 			},
-// 			{
-// 				Name: StepName("stepC"),
-// 			},
-// 		},
-// 	}
+	testCases := []struct {
+		Step               Step
+		ExpectedShouldExit bool
+	}{
+		{
+			Step: Step{
+				StepOpts: StepOpts{
+					MaxRunAttempts: 2,
+				},
+				stepResult: &StepResult{
+					StepState: StepStateError,
+				},
+				stepRunProgress: StepRunProgress{
+					runCount: 2,
+				},
+			},
+			ExpectedShouldExit: true,
+		},
+		{
+			Step: Step{
+				StepOpts: StepOpts{
+					MaxRunAttempts: 2,
+				},
+				stepResult: &StepResult{
+					StepState: StepStateComplete,
+				},
+				stepRunProgress: StepRunProgress{
+					runCount: 2,
+				},
+			},
+			ExpectedShouldExit: false,
+		},
+		{
+			Step: Step{
+				StepOpts: StepOpts{
+					MaxRunAttempts: 2,
+				},
+				stepResult: &StepResult{
+					StepState: StepStateSkipped,
+				},
+				stepRunProgress: StepRunProgress{
+					runCount: 2,
+				},
+			},
+			ExpectedShouldExit: false,
+		},
+		{
+			Step: Step{
+				StepOpts: StepOpts{
+					MaxRunAttempts: 2,
+				},
+				stepResult: &StepResult{
+					StepState: StepStatePending,
+				},
+				stepRunProgress: StepRunProgress{
+					runCount: 2,
+				},
+			},
+			ExpectedShouldExit: true,
+		},
+		{
+			Step: Step{
+				StepOpts: StepOpts{
+					MaxRunAttempts: 2,
+				},
+			},
+		},
+		{
+			Step: Step{
+				StepOpts: StepOpts{
+					MaxRunAttempts: 2,
+				},
+				stepRunProgress: StepRunProgress{
+					runCount: 1,
+				},
+				stepResult: &StepResult{
+					StepState: StepStatePending,
+				},
+			},
+		},
+	}
 
-// 	// happy path
-// 	resolvedStep := step.resolveNextStep("stepA")
-// 	assert.NotNil(t, resolvedStep)
+	for _, tc := range testCases {
 
-// 	// step not found
-// 	resolvedStep = step.resolveNextStep("stepD")
-// 	assert.Nil(t, resolvedStep)
-// }
+		shouldExit := tc.Step.shouldExit()
 
-// func Test_shouldRetry(t *testing.T) {
+		assert.Equal(t, tc.ExpectedShouldExit, shouldExit)
+	}
+}
 
-// 	testCases := []struct {
-// 		StrictErrorCheck    bool
-// 		ExpectedShouldRetry bool
-// 		ErrorToCheck        error
-// 	}{
-// 		{
-// 			StrictErrorCheck:    false,
-// 			ErrorToCheck:        fmt.Errorf("error"),
-// 			ExpectedShouldRetry: true,
-// 		},
-// 		{
-// 			StrictErrorCheck:    true,
-// 			ErrorToCheck:        fmt.Errorf("error"),
-// 			ExpectedShouldRetry: false,
-// 		},
-// 		{
-// 			StrictErrorCheck:    true,
-// 			ErrorToCheck:        fmt.Errorf("error1"),
-// 			ExpectedShouldRetry: true,
-// 		},
-// 		{
-// 			StrictErrorCheck:    false,
-// 			ErrorToCheck:        fmt.Errorf("wont retry for this error"),
-// 			ExpectedShouldRetry: false,
-// 		},
-// 	}
+func Test_getExecutableBranch(t *testing.T) {
 
-// 	for _, tc := range testCases {
-// 		step := Step{
-// 			ErrorsToRetry: []error{
-// 				fmt.Errorf("error1"),
-// 				fmt.Errorf("error2"),
-// 				fmt.Errorf("error3"),
-// 			},
-// 			StrictErrorCheck: tc.StrictErrorCheck,
-// 		}
+	b := Branches{
+		Branches: []Branch{
+			{
+				BranchName: "branch1",
+			},
+			{
+				BranchName: "branch2",
+			},
+		},
+	}
 
-// 		shouldRetry := step.shouldRetry(tc.ErrorToCheck)
+	branch := b.getExecutableBranch("branch1")
+	assert.Equal(t, "branch1", string(branch.BranchName))
 
-// 		assert.Equal(t, tc.ExpectedShouldRetry, shouldRetry)
-// 	}
-// }
+	branch = b.getExecutableBranch("branch3")
+	assert.Nil(t, branch)
+
+}
+
+func Test_setDefaults(t *testing.T) {
+
+	step := Step{
+		StepOpts: StepOpts{
+			RetryAllErrors: true,
+		},
+	}
+
+	step.setDefaults()
+	assert.Equal(t, 1, step.StepOpts.MaxRunAttempts)
+	assert.Nil(t, step.StepOpts.ErrorsToRetry)
+}
+
+func Test_setProgress(t *testing.T) {
+
+	step := Step{}
+
+	step.setProgress()
+	assert.Equal(t, 1, step.stepRunProgress.runCount)
+}
+
+func Test_setResult(t *testing.T) {
+
+	step := Step{}
+
+	message := "step complete"
+	sr := &StepResult{
+		StepState:   StepStateComplete,
+		StepMessage: &message,
+		StepData: GoStepsCtxData{
+			"key1": "value1",
+		},
+	}
+	step.setResult(sr)
+
+	assert.Equal(t, sr, step.stepResult)
+}
+
+func Test_Main(t *testing.T) {
+
+	ctx := NewGoStepsContext()
+
+	multipleDivide := Step{
+		Name: "multipleDivide",
+		Function: func(c GoStepsCtx) StepResult {
+			res := c.GetData("result").(int) * 2
+			return MarkStateComplete().WithData(map[string]interface{}{
+				"result": res,
+			})
+		},
+		Branches: &Branches{
+			Resolver: func(ctx GoStepsCtx) BranchName {
+				nx := ctx.GetData("result").(int)
+
+				if nx%2 == 0 {
+					return BranchName("divide")
+				}
+				return BranchName("multiple")
+			},
+			Branches: []Branch{
+				{
+					BranchName: "divide",
+					Steps: Steps{
+						{
+							Name: "step3.divide",
+							Function: func(c GoStepsCtx) StepResult {
+								res := c.GetData("result").(int) / 2
+								return MarkStateComplete().WithData(map[string]interface{}{
+									"result": res,
+								})
+							},
+						},
+					},
+				},
+				{
+					BranchName: "multiply",
+					Steps: Steps{
+						{
+							Name: "step3.multiply",
+							Function: func(c GoStepsCtx) StepResult {
+								res := c.GetData("result").(int) * 2
+								return MarkStateComplete().WithData(map[string]interface{}{
+									"result": res,
+								})
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	steps := Steps{
+		{
+			Name: "add",
+			Function: func(c GoStepsCtx) StepResult {
+
+				res := c.GetData("n1").(int) + c.GetData("n2").(int)
+				return MarkStateComplete().WithData(map[string]interface{}{
+					"result": res,
+				})
+			},
+			StepArgs: map[string]interface{}{
+				"n1": 5,
+				"n2": 4,
+			},
+		},
+		{
+			Name: "subtract",
+			Function: func(c GoStepsCtx) StepResult {
+				res := c.GetData("n1").(int) - c.GetData("result").(int)
+				return MarkStateComplete().WithData(map[string]interface{}{
+					"result": res,
+				})
+			},
+			StepArgs: map[string]interface{}{
+				"n1": 5,
+			},
+		},
+		multipleDivide,
+		{
+			Name: "add",
+			Function: func(c GoStepsCtx) StepResult {
+				res := c.GetData("result").(int) + 5
+
+				return MarkStateComplete().WithData(map[string]interface{}{
+					"result": res,
+				})
+			},
+		},
+		{
+			Name: "print",
+			Function: func(c GoStepsCtx) StepResult {
+				fmt.Println("result", c.GetData("result"))
+				return MarkStateComplete()
+			},
+		},
+	}
+
+	root := RootStep{
+		Steps: steps,
+	}
+
+	root.Execute(ctx)
+
+	ctxData := ctx.GetData("result")
+
+	assert.Equal(t, 1, ctxData.(int))
+}

@@ -3,11 +3,11 @@ package gosteps
 type StepState string
 
 const (
-	StepStateComplete StepState = "StepStateComplete" // step completed successfully
-	StepStateFailed   StepState = "StepStateFailed"   // step failed to complete, without error
-	StepStateSkipped  StepState = "StepStateSkipped"  // step was skipped
-	StepStatePending  StepState = "StepStatePending"  // step is pending, should be retried
-	StepStateError    StepState = "StepStateError"    // step failed to complete, with error
+	StepStateComplete StepState = "StepStateComplete" // step completed successfully             [non-retriable]
+	StepStateFailed   StepState = "StepStateFailed"   // step failed to complete, without error  [non-retriable]
+	StepStateSkipped  StepState = "StepStateSkipped"  // step was skipped                        [non-retriable]
+	StepStatePending  StepState = "StepStatePending"  // step is pending, should be retried      [retriable]
+	StepStateError    StepState = "StepStateError"    // step failed to complete, with error     [retriable]
 )
 
 type StepResult struct {
