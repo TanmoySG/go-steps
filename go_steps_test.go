@@ -359,7 +359,7 @@ func Test_Main(t *testing.T) {
 				res := c.GetData("n1").(int) - c.GetData("result").(int)
 				return MarkStateComplete().WithData(map[string]interface{}{
 					"result": res,
-				})
+				}).WithMessage("step complete")
 			},
 			StepArgs: map[string]interface{}{
 				"n1": 5,
