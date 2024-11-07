@@ -141,42 +141,24 @@ func Test_shouldExit(t *testing.T) {
 	}{
 		{
 			Step: Step{
-				StepOpts: StepOpts{
-					MaxRunAttempts: 2,
-				},
 				stepResult: &StepResult{
 					StepState: StepStateError,
 				},
-				stepRunProgress: StepRunProgress{
-					runCount: 2,
-				},
 			},
 			ExpectedShouldExit: true,
 		},
 		{
 			Step: Step{
-				StepOpts: StepOpts{
-					MaxRunAttempts: 2,
-				},
 				stepResult: &StepResult{
 					StepState: StepStateComplete,
 				},
-				stepRunProgress: StepRunProgress{
-					runCount: 2,
-				},
 			},
 			ExpectedShouldExit: false,
 		},
 		{
 			Step: Step{
-				StepOpts: StepOpts{
-					MaxRunAttempts: 2,
-				},
 				stepResult: &StepResult{
 					StepState: StepStateSkipped,
-				},
-				stepRunProgress: StepRunProgress{
-					runCount: 2,
 				},
 			},
 			ExpectedShouldExit: false,
@@ -194,26 +176,6 @@ func Test_shouldExit(t *testing.T) {
 				},
 			},
 			ExpectedShouldExit: true,
-		},
-		{
-			Step: Step{
-				StepOpts: StepOpts{
-					MaxRunAttempts: 2,
-				},
-			},
-		},
-		{
-			Step: Step{
-				StepOpts: StepOpts{
-					MaxRunAttempts: 2,
-				},
-				stepRunProgress: StepRunProgress{
-					runCount: 1,
-				},
-				stepResult: &StepResult{
-					StepState: StepStatePending,
-				},
-			},
 		},
 	}
 

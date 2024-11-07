@@ -139,7 +139,7 @@ func (step *Step) shouldRetry() bool {
 		return true
 	}
 
-	if step.StepOpts.RetryAllErrors {
+	if step.stepResult.StepState == StepStateError && step.StepOpts.RetryAllErrors {
 		return true
 	}
 
@@ -161,14 +161,10 @@ func (step *Step) shouldExit() bool {
 		return false
 	}
 
-	if step.StepOpts.MaxRunAttempts == step.stepRunProgress.runCount {
-		switch step.stepResult.StepState {
-		case StepStateComplete, StepStateSkipped:
-			return false
-		default: // StepStateError, StepStatePending, StepStateFailed
-			return true
-		}
+	switch step.stepResult.StepState {
+	case StepStateComplete, StepStateSkipped:
+		return false
+	default: // StepStateError, StepStatePending, StepStateFailed
+		return true
 	}
-
-	return false
 }
