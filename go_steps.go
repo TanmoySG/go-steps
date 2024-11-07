@@ -58,6 +58,8 @@ func (step *Step) execute(c GoStepsCtx) {
 	c.SetProgress(step.Name, stepResult)
 
 	step.setProgress()
+
+	step.log()
 }
 
 // Execute a chain of steps with the context provided
@@ -139,7 +141,7 @@ func (step *Step) shouldRetry() bool {
 		return true
 	}
 
-	if step.StepOpts.RetryAllErrors {
+	if step.stepResult.StepState == StepStateError && step.StepOpts.RetryAllErrors {
 		return true
 	}
 
@@ -161,14 +163,10 @@ func (step *Step) shouldExit() bool {
 		return false
 	}
 
-	if step.StepOpts.MaxRunAttempts == step.stepRunProgress.runCount {
-		switch step.stepResult.StepState {
-		case StepStateComplete, StepStateSkipped:
-			return false
-		default: // StepStateError, StepStatePending, StepStateFailed
-			return true
-		}
+	switch step.stepResult.StepState {
+	case StepStateComplete, StepStateSkipped:
+		return false
+	default: // StepStateError, StepStatePending, StepStateFailed
+		return true
 	}
-
-	return false
 }

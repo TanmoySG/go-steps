@@ -8,6 +8,8 @@ import (
 
 func main() {
 
+	count := 0
+
 	ctx := gosteps.NewGoStepsContext()
 
 	multipleDivide := gosteps.Step{
@@ -78,6 +80,10 @@ func main() {
 		{
 			Name: "subtract",
 			Function: func(c gosteps.GoStepsCtx) gosteps.StepResult {
+				if count < 3 {
+					count++
+					return gosteps.MarkStateError().WithWrappedError(fmt.Errorf("error"))
+				}
 				res := c.GetData("n1").(int) - c.GetData("result").(int)
 				return gosteps.MarkStateComplete().WithData(map[string]interface{}{
 					"result": res,
@@ -85,6 +91,10 @@ func main() {
 			},
 			StepArgs: map[string]interface{}{
 				"n1": 5,
+			},
+			StepOpts: gosteps.StepOpts{
+				MaxRunAttempts: 5,
+				RetryAllErrors: true,
 			},
 		},
 		multipleDivide,
@@ -107,6 +117,6 @@ func main() {
 		},
 	}
 
-	stepChain := gosteps.NewStepChain(steps)
-	stepChain.Execute(ctx)
+	stepsProcessor := gosteps.NewStepsProcessor(steps)
+	stepsProcessor.Execute(ctx)
 }

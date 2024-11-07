@@ -72,7 +72,13 @@ func (branch *Branch) ToJson() (string, error) {
 }
 
 // NewStepChain creates a new root branch of the step-chain
+// Soon to be deprecated in favor of NewStepsProcessor
 func NewStepChain(steps Steps) *Branch {
+	return NewStepsProcessor(steps)
+}
+
+// NewStepsProcessor creates a new root branch of the step-chain
+func NewStepsProcessor(steps Steps) *Branch {
 	return &Branch{
 		BranchName: "root",
 		Steps:      steps,

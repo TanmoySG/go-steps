@@ -1,5 +1,7 @@
 package gosteps
 
+// import "log"
+
 // GoStepsCtxData type defines the data stored in the context
 type GoStepsCtxData map[string]interface{}
 
@@ -13,6 +15,7 @@ type StepProgress struct {
 type GoStepsCtx struct {
 	data          GoStepsCtxData
 	stepsProgress map[StepName]StepProgress
+	// logger        *log.Logger
 }
 
 // GoStepsContext interface defines the methods for the context
