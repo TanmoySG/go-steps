@@ -22,3 +22,5 @@ go.work
 
 # macOS junk
 .DS_Store
+
+*.log
