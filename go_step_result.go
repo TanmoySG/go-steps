@@ -17,13 +17,7 @@ type StepResult struct {
 	StepData    GoStepsCtxData `json:"stepData"`            // stores the data from a step, if any
 	StepState   StepState      `json:"stepState"`           // state of the step
 	StepMessage *string        `json:"stepMessage"`         // message from the step execution, if any
-	StepError   *StepError     `json:"stepError,omitempty"` // error from the step execution, if any
-}
-
-// StepError type defines the error from the step execution
-type StepError struct {
-	StepErrorNameOrId string `json:"stepErrorNameOrId"`
-	StepErrorMessage  string `json:"stepErrorMessage"`
+	StepError   error          `json:"stepError,omitempty"` // error from the step execution, if any
 }
 
 // markState marks the state of the step
@@ -70,17 +64,8 @@ func (sr StepResult) WithMessage(message string) StepResult {
 	return sr
 }
 
-// WithWrappedError wraps non-StepError/non-GoStep errors into StepError
-func (sr StepResult) WithWrappedError(e error) StepResult {
-	sr.StepError = &StepError{
-		StepErrorNameOrId: "error",
-		StepErrorMessage:  e.Error(),
-	}
-	return sr
-}
-
 // WithStepError sets the GoSteps - StepError for the step
-func (sr StepResult) WithStepError(stepErr StepError) StepResult {
-	sr.StepError = &stepErr
+func (sr StepResult) WithError(stepErr error) StepResult {
+	sr.StepError = stepErr
 	return sr
 }

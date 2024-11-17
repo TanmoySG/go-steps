@@ -1,6 +1,7 @@
 package gosteps
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -8,10 +9,7 @@ import (
 )
 
 var (
-	stepError1 = StepError{
-		StepErrorNameOrId: "error1",
-		StepErrorMessage:  "error1",
-	}
+	error1 = errors.New("error1")
 )
 
 func Test_shouldRetry(t *testing.T) {
@@ -20,7 +18,6 @@ func Test_shouldRetry(t *testing.T) {
 		StrictErrorCheck    bool
 		Step                Step
 		ExpectedShouldRetry bool
-		ErrorToCheck        StepError
 	}{
 		{
 			Step: Step{
@@ -95,13 +92,13 @@ func Test_shouldRetry(t *testing.T) {
 				StepOpts: StepOpts{
 					MaxRunAttempts: 2,
 					RetryAllErrors: false,
-					ErrorsToRetry: []StepError{
-						stepError1,
+					ErrorsToRetry: []error{
+						error1,
 					},
 				},
 				stepResult: &StepResult{
 					StepState: StepStateError,
-					StepError: &stepError1,
+					StepError: error1,
 				},
 				stepRunProgress: StepRunProgress{
 					runCount: 1,

@@ -41,15 +41,7 @@ func Test_markStatus(t *testing.T) {
 	}
 }
 
-func Test_WithWrappedError_WithStepError(t *testing.T) {
-	expectedWrappedError := &StepError{
-		StepErrorNameOrId: "error",
-		StepErrorMessage:  "error",
-	}
-
-	stepResult := StepResult{}.WithWrappedError(fmt.Errorf("error"))
-	assert.Equal(t, expectedWrappedError, stepResult.StepError)
-
-	stepResult = StepResult{}.WithStepError(stepError1)
-	assert.Equal(t, &stepError1, stepResult.StepError)
+func Test_WithError(t *testing.T) {
+	stepResult := StepResult{}.WithError(fmt.Errorf("error"))
+	assert.Equal(t, fmt.Errorf("error"), stepResult.StepError)
 }
