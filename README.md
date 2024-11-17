@@ -17,7 +17,7 @@ The idea behind `gosteps` is to define set of functions as chain-of-steps and ex
 
 ### Installation
 
-```bash 
+```bash
 go get github.com/TanmoySG/go-steps
 ```
 
@@ -38,29 +38,6 @@ type Step struct {
   StepOpts        StepOpts               `json:"stepConfig"`
   Branches        *Branches              `json:"branches"`
   StepArgs        map[string]interface{} `json:"stepArgs"`
-  StepResult      *StepResult            `json:"stepResult"`
-}
-```
-
-| Field      | Description                                                                                                |
-|------------|------------------------------------------------------------------------------------------------------------|
-| Name       | Name of step                                                                                               |
-| Function   | The function to execute                                                                                    |
-| StepOpts   | Options/Configurations of the step                                                                         |
-| Branches   | Branches are a sequentially executable collection of  steps.                                               |
-| StepArgs   | Any additional arguments need to pass to  the step.                                                        |
-| StepResult | The results - statues of step, message returned by the step function and, errors are defined in StepResult |
-
-**StepOpts**
-
-The `StepOpts` type contains the configurations/options for the step execution.
-
-```go
-type StepOpts struct {
-  ErrorsToRetry  []StepError   `json:"errorsToRetry"`
-  RetryAllErrors bool          `json:"retryAllErrors"`
-  MaxRunAttempts int           `json:"maxAttempts"`
-  RetrySleep     time.Duration `json:"retrySleep"`
 }
 
 // example step
@@ -73,12 +50,35 @@ step := gosteps.Step{
 }
 ```
 
-| Field          | Description                                                                                                          |
-|----------------|----------------------------------------------------------------------------------------------------------------------|
-| ErrorsToRetry  | a set of `StepError`s for which a step should be retried.                                                            |
-| RetryAllErrors | A boolean type flag which specifies if a step needs to retry for any error, irrespective of those in `ErrorsToRetry` |
-| MaxRunAttempts | Max attempts are the number of times the step is ran/executed (first run + retries). If not set, it'll run once.     |
-| RetrySleep     | Sleep duration (type time.Duration) between each re-attempts                                                         |
+| Field    | Description                                                                       |
+|----------|-----------------------------------------------------------------------------------|
+| Name     | Name of step                                                                      |
+| Function | The function to execute                                                           |
+| StepOpts | Options/Configurations of the step                                                |
+| Branches | Branches are a sequentially executable collection of  steps.                      |
+| StepArgs | Any additional arguments/variables needed to be passed to the step for execution. |
+
+**StepOpts**
+
+The `StepOpts` type contains the configurations/options for the step execution.
+
+```go
+type StepOpts struct {
+  ErrorsToRetry        []error         `json:"errorsToRetry"`
+  ErrorPatternsToRetry []regexp.Regexp `json:"errorPatternsToRetry"`
+  RetryAllErrors       bool            `json:"retryAllErrors"`
+  MaxRunAttempts       int             `json:"maxAttempts"`
+  RetrySleep           time.Duration   `json:"retrySleep"`
+}
+```
+
+| Field                | Description                                                                                                          |
+|----------------------|----------------------------------------------------------------------------------------------------------------------|
+| ErrorsToRetry        | a set of errors for which a step should be retried.                                                                  |
+| ErrorPatternsToRetry | a set of `StepErrorPattern`s for which a step should be retried, if error matches pattern                            |
+| RetryAllErrors       | A boolean type flag which specifies if a step needs to retry for any error, irrespective of those in `ErrorsToRetry` |
+| MaxRunAttempts       | Max attempts are the number of times the step is ran/executed (first run + retries). If not set, it'll run once.     |
+| RetrySleep           | Sleep duration (type time.Duration) between each re-attempts                                                         |
 
 **Function**
 
@@ -264,7 +264,7 @@ type StepResult struct {
   StepData    GoStepsCtxData `json:"stepData"`
   StepState   StepState      `json:"stepState"`
   StepMessage *string        `json:"stepMessage"`
-  StepError   *StepError     `json:"stepError,omitempty"`
+  StepError   error     `json:"stepError,omitempty"`
 }
 ```
 
@@ -298,20 +298,7 @@ gosteps.MarkStateComplete().WithData(map[string]interface{}{"key": value})
 gosteps.MarkStateComplete().WithMessage("message")
 
 // add error to the step result of type StepError
-gosteps.MarkStateError().WithError(stepError1)
-
-// wrap any non-GoStep StepErrors and add to the step result
-// it wraps any error passed to it as StepError
-gosteps.MarkStateError().WithWrappedError(fmt.Errorf("error"))
-```
-
-To define a GoStep error, use the `StepError` type.
-
-```go
-stepError1 := gosteps.StepError{
-  StepErrorNameOrId: "error1",
-  StepErrorMessage:  "error message",
-}
+gosteps.MarkStateError().WithError(errors.New("error message"))
 ```
 
 ### Conditional Branching
@@ -355,12 +342,43 @@ The retry mechanism runs for `StepOpts.MaxRunAttempts`, that included the initia
 
 ```go
 gosteps.StepOpts{
-  ErrorsToRetry: []gosteps.StepError{
-    stepError1,
-  },
+  ErrorsToRetry: []error{errors.New("error")},
+  ErrorPatternsToRetry: []regexp.Regexp{*regexp.MustCompile("err*")},
   RetryAllErrors: false,
   MaxRunAttempts: 5,
   RetrySleep: 5 * time.Second,
+}
+```
+
+### Logging
+
+GoSteps uses the `[zerolog`](<https://github.com/rs/zerolog>) package to enable logging within GoSteps. Initialize the logger using the `gosteps.NewGoStepsLogger` method, passing the output type and options.
+
+```go
+// output : of type io.Writer, example os.Stdout, for more options refer to zerolog documentation: https://github.com/rs/zerolog?tab=readme-ov-file#multiple-log-output
+output := zerolog.MultiLevelWriter(os.Stdout, runLogFile)
+
+// opts   : of type *LoggerOpts, if nil, default options are used to enable step level logging, set StepLoggingEnabled to true
+opts := LoggerOpts{ 
+    StepLoggingEnabled : true,
+}
+
+logger := gosteps.NewGoStepsLogger(output, opts)
+```
+
+The logger can be passed to the `GoStepsCtx.Use()` method to enable logging.
+
+```go
+ctx := gosteps.NewGoStepsContext()
+ctx.Use(logger)
+```
+
+If `StepLoggingEnabled` is set to `true` then the step run is also logged with the step name, state, message, and error. In cases where logs are required within the step function, the logger can be accessed using the `ctx.Log()` method.
+
+```go
+func(c gosteps.GoStepsCtx) gosteps.StepResult {
+    c.Log("this is a message", gosteps.InfoLevel)
+    return gosteps.MarkStateComplete()
 }
 ```
 
@@ -368,6 +386,6 @@ gosteps.StepOpts{
 
 Sample code can be found in the [example](./example/) directory.
 
-### Help!
+### Help
 
 If you want to help fix the above constraint or other bugs/issues, feel free to raise an Issue or Pull Request with the changes. It'd be an immense help!
