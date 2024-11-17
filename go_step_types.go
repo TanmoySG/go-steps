@@ -2,6 +2,7 @@ package gosteps
 
 import (
 	"encoding/json"
+	"regexp"
 	"time"
 )
 
@@ -55,10 +56,11 @@ type Branches struct {
 
 // StepOpts type defines the configuration for the step
 type StepOpts struct {
-	ErrorsToRetry  []StepError   `json:"errorsToRetry"`
-	RetryAllErrors bool          `json:"retryAllErrors"`
-	MaxRunAttempts int           `json:"maxAttempts"`
-	RetrySleep     time.Duration `json:"retrySleep"`
+	ErrorsToRetry        []error         `json:"errorsToRetry"`
+	ErrorPatternsToRetry []regexp.Regexp `json:"errorPatternsToRetry"`
+	RetryAllErrors       bool            `json:"retryAllErrors"`
+	MaxRunAttempts       int             `json:"maxAttempts"`
+	RetrySleep           time.Duration   `json:"retrySleep"`
 }
 
 // ToJson converts the step-tree to JSON-string
