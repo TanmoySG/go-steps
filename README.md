@@ -9,7 +9,7 @@ GoSteps is a go library that helps in running functions as steps and reminds you
 The idea behind `gosteps` is to define set of functions as chain-of-steps and execute them in a sequential fashion.
 
 > [!NOTE]
-> go-steps v1 is a breaking change and older v0 models wont work with the new version. For v0 documentation, examples refer to [v0.3.0-beta documentation](https://github.com/TanmoySG/go-steps/tree/v0.3.0-beta) or v0 guide [here](./v0/README.md).
+> go-steps v1 is a breaking change and older v0 models won't work with the new version. To continue to use the v0, you can either use the `v0` sub-package of the library or the `v0.3.0` tag. For usage documentation of `v0`, refer to the [v0 README](./v0/README.md).
 
 ## Usage
 
@@ -385,7 +385,3 @@ func(c gosteps.GoStepsCtx) gosteps.StepResult {
 ### Example
 
 Sample code can be found in the [example](./example/) directory.
-
-### Help
-
-If you want to help fix the above constraint or other bugs/issues, feel free to raise an Issue or Pull Request with the changes. It'd be an immense help!
