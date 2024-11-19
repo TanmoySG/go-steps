@@ -1,4 +1,4 @@
-# GoSteps - `v1`
+# GoSteps
 
 GoSteps is a go library that helps in running functions as steps and reminds you to step out and get active (kidding!).
 
