@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	gosteps "github.com/TanmoySG/go-steps/v0"
 	"github.com/TanmoySG/go-steps/example/v0/funcs"
+	gosteps "github.com/TanmoySG/go-steps/v0"
 )
 
 const (
