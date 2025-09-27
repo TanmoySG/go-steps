@@ -15,19 +15,26 @@ type BranchName string
 // StepFn defines the Step's Function
 type StepFn func(ctx GoStepsCtx) StepResult
 
+// RollbackFn defines the Rollback Function
+type RollbackFn func(ctx GoStepsCtx) RollbackResult
+
 // ResolverFn defines the Resolver Function
 // to determine the branch to execute
 type ResolverFn func(ctx GoStepsCtx) BranchName
 
 // Step type defines a step with all configurations for the step
 type Step struct {
-	Name            StepName               `json:"name"`
-	Function        StepFn                 `json:"-"`
-	StepOpts        StepOpts               `json:"stepConfig"`
-	Branches        *Branches              `json:"branches"`
-	StepArgs        map[string]interface{} `json:"stepArgs"`
-	stepResult      *StepResult            `json:"-"`
-	stepRunProgress StepRunProgress        `json:"-"`
+	Name             StepName               `json:"name"`
+	Function         StepFn                 `json:"-"`
+	RollbackFunction RollbackFn             `json:"-"`
+	RollbackArgs     map[string]interface{} `json:"rollbackArgs"`
+	StepOpts         StepOpts               `json:"stepConfig"`
+	Branches         *Branches              `json:"branches"`
+	StepArgs         map[string]interface{} `json:"stepArgs"`
+	stepResult       *StepResult            `json:"-"`
+	stepRunProgress  StepRunProgress        `json:"-"`
+
+	// RollbackOpts     StepOpts               `json:"rollbackOpts"`
 }
 
 // stepRunProgress type defines the progress of the step

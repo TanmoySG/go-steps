@@ -4,6 +4,7 @@ package gosteps
 // of the step after execution
 type StepState string
 
+// StepState constants
 const (
 	StepStateComplete StepState = "StepStateComplete" // step completed successfully             [non-retriable]
 	StepStateFailed   StepState = "StepStateFailed"   // step failed to complete, without error  [non-retriable]
@@ -18,6 +19,22 @@ type StepResult struct {
 	StepState   StepState      `json:"stepState"`           // state of the step
 	StepMessage *string        `json:"stepMessage"`         // message from the step execution, if any
 	StepError   error          `json:"stepError,omitempty"` // error from the step execution, if any
+}
+
+// RollbackState type defines the state of the rollback
+type RollbackState string
+
+// RollbackState constants
+const (
+	RollbackStateSuccess RollbackState = "RollbackStateSuccess" // rollback completed successfully
+	RollbackStateFailed  RollbackState = "RollbackStateFailed"  // rollback failed
+)
+
+// RollbackResult type defines the result of the rollback
+type RollbackResult struct {
+	RollbackState   RollbackState `json:"stepState"`           // state of the rollback
+	RollbackMessage *string       `json:"stepMessage"`         // message from the rollback execution, if any
+	RollbackError   error         `json:"stepError,omitempty"` // error from the rollback execution, if any
 }
 
 // markState marks the state of the step

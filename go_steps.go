@@ -103,6 +103,10 @@ func (steps *Steps) execute(c GoStepsCtx) {
 		}
 
 		if currentStep.shouldExit() {
+			if currentStep.shouldRollback() && currentStep.RollbackFunction != nil {
+				currentStep.runRollback(c)
+			}
+
 			break
 		}
 
@@ -118,6 +122,35 @@ func (steps *Steps) execute(c GoStepsCtx) {
 
 		currentStepCounter += 1
 	}
+}
+
+func (step *Step) runRollback(c GoStepsCtx) {
+	rollbackLogFields := map[string]interface{}{
+		"step": step.Name,
+	}
+
+	if step.RollbackArgs != nil {
+		rollbackLogFields["rollbackArgs"] = step.RollbackArgs
+	}
+
+	c.logger.logger.Warn().Fields(rollbackLogFields).Msg("Running rollback for failed step")
+
+	rollbackResult := step.RollbackFunction(c)
+	c.SetRollbackProgress(step.Name, rollbackResult)
+
+	rollbackLogFields = map[string]interface{}{
+		"step":  step.Name,
+		"state": rollbackResult.RollbackState,
+	}
+
+	if rollbackResult.RollbackMessage != nil {
+		rollbackLogFields["rollbackMessage"] = *rollbackResult.RollbackMessage
+	}
+	if rollbackResult.RollbackError != nil {
+		rollbackLogFields["error"] = rollbackResult.RollbackError.Error()
+	}
+
+	c.logger.logger.Warn().Fields(rollbackLogFields).Msg("Rollback Complete")
 }
 
 // getExecutableBranch returns the branch to execute based on the resolver result
@@ -191,5 +224,18 @@ func (step *Step) shouldExit() bool {
 		return false
 	default: // StepStateError, StepStatePending, StepStateFailed
 		return true
+	}
+}
+
+func (step *Step) shouldRollback() bool {
+	if step.stepResult == nil {
+		return false
+	}
+
+	switch step.stepResult.StepState {
+	case StepStateFailed:
+		return true
+	default: // StepStateError, StepStatePending,  StepStateComplete, StepStateSkipped
+		return false
 	}
 }

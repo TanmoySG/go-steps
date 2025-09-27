@@ -5,8 +5,9 @@ type GoStepsCtxData map[string]interface{}
 
 // StepProgress type defines the progress of the step
 type StepProgress struct {
-	StepName   StepName   `json:"stepName"`
-	StepResult StepResult `json:"stepResult"`
+	StepName           StepName        `json:"stepName"`
+	StepResult         StepResult      `json:"stepResult"`
+	StepRollbackResult *RollbackResult `json:"stepRollback"`
 }
 
 // GoStepsCtx type defines the context for the step-chain
@@ -84,6 +85,15 @@ func (ctx *GoStepsCtx) SetProgress(step StepName, stepResult StepResult) GoSteps
 		StepName:   step,
 		StepResult: stepResult,
 	}
+
+	return *ctx
+}
+
+// SetRollbackProgress sets the progress of the rollback
+func (ctx *GoStepsCtx) SetRollbackProgress(step StepName, rollbackResult RollbackResult) GoStepsCtx {
+	progress := ctx.stepsProgress[step]
+	progress.StepRollbackResult = &rollbackResult
+	ctx.stepsProgress[step] = progress
 
 	return *ctx
 }
