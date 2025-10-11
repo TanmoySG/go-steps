@@ -33,30 +33,36 @@ The `Step` type contains the requirments to execute a step function and is a par
 
 ```go
 type Step struct {
-  Name            StepName               `json:"name"`
-  Function        StepFn                 `json:"-"`
-  StepOpts        StepOpts               `json:"stepConfig"`
-  Branches        *Branches              `json:"branches"`
-  StepArgs        map[string]interface{} `json:"stepArgs"`
+  Name             StepName               `json:"name"`
+  Function         StepFn                 `json:"-"`
+  RollbackFunction RollbackFn             `json:"-"`
+  RollbackArgs     map[string]interface{} `json:"rollbackArgs"`
+  StepOpts         StepOpts               `json:"stepConfig"`
+  Branches         *Branches              `json:"branches"`
+  StepArgs         map[string]interface{} `json:"stepArgs"`
 }
 
 // example step
 step := gosteps.Step{
   Name: "add",
   Function: Add,
+  RollbackFunction: RollbackAdd,
   StepArgs: map[string]interface{}{"n1": 5},
+  RollbackArgs: map[string]interface{}{"operation": "add"},
   StepOpts: gosteps.StepOpts{},
   Branches: &gosteps.Branches{},
 }
 ```
 
-| Field    | Description                                                                       |
-|----------|-----------------------------------------------------------------------------------|
-| Name     | Name of step                                                                      |
-| Function | The function to execute                                                           |
-| StepOpts | Options/Configurations of the step                                                |
-| Branches | Branches are a sequentially executable collection of  steps.                      |
-| StepArgs | Any additional arguments/variables needed to be passed to the step for execution. |
+| Field            | Description                                                                       |
+|------------------|-----------------------------------------------------------------------------------|
+| Name             | Name of step                                                                      |
+| Function         | The function to execute                                                           |
+| RollbackFunction | Optional rollback function to execute if the step fails                          |
+| RollbackArgs     | Additional arguments/variables passed to the rollback function                   |
+| StepOpts         | Options/Configurations of the step                                                |
+| Branches         | Branches are a sequentially executable collection of  steps.                      |
+| StepArgs         | Any additional arguments/variables needed to be passed to the step for execution. |
 
 **StepOpts**
 
@@ -92,6 +98,25 @@ type StepFn func(ctx GoStepsCtx) StepResult
 func Add(ctx GoStepsCtx) StepResult {
   // do something
   return gosteps.MarkStateComplete()
+}
+```
+
+**RollbackFunction**
+
+Defines a rollback function of type `RollbackFn` that is executed when a step fails.
+
+```go
+// RollbackFn Type
+type RollbackFn func(ctx GoStepsCtx) RollbackResult
+
+// example rollback function
+func RollbackAdd(ctx GoStepsCtx) RollbackResult {
+  // perform cleanup operations
+  message := "Add operation rolled back successfully"
+  return gosteps.RollbackResult{
+    RollbackState:   gosteps.RollbackStateSuccess,
+    RollbackMessage: &message,
+  }
 }
 ```
 
@@ -350,6 +375,147 @@ gosteps.StepOpts{
 }
 ```
 
+### Step Rollback
+
+GoSteps provides built-in rollback functionality to handle cleanup operations when steps fail. When a step fails (returns `StepStateFailed` or `StepStateError`), its associated rollback function is automatically executed to perform cleanup, resource deallocation, or any necessary compensating actions.
+
+#### Defining Rollback Functions
+
+Rollback functions are defined using the `RollbackFn` type and assigned to the `RollbackFunction` field of a step. They follow the same pattern as step functions but return a `RollbackResult`.
+
+```go
+// RollbackFn Type
+type RollbackFn func(ctx GoStepsCtx) RollbackResult
+
+// example step with rollback
+step := gosteps.Step{
+  Name: "processPayment",
+  Function: ProcessPayment,
+  RollbackFunction: func(ctx gosteps.GoStepsCtx) gosteps.RollbackResult {
+    // Perform cleanup actions
+    // e.g., cancel payment, release resources, etc.
+    
+    rollbackMessage := "Payment cancelled successfully"
+    return gosteps.RollbackResult{
+      RollbackState:   gosteps.RollbackStateSuccess,
+      RollbackMessage: &rollbackMessage,
+      RollbackError:   nil,
+    }
+  },
+  RollbackArgs: map[string]interface{}{
+    "paymentId": "12345",
+  },
+}
+```
+
+#### RollbackResult
+
+The `RollbackResult` type contains the status and details of the rollback operation.
+
+```go
+type RollbackResult struct {
+  RollbackState   RollbackState `json:"stepState"`           // state of the rollback
+  RollbackMessage *string       `json:"stepMessage"`         // message from the rollback execution, if any
+  RollbackError   error         `json:"stepError,omitempty"` // error from the rollback execution, if any
+}
+```
+
+| Field           | Description                                          |
+|-----------------|------------------------------------------------------|
+| RollbackState   | State of the rollback operation (Success or Failed) |
+| RollbackMessage | Optional message describing the rollback operation   |
+| RollbackError   | Optional error if the rollback operation failed     |
+
+#### RollbackState
+
+GoSteps defines two rollback states:
+
+```go
+RollbackStateSuccess RollbackState = "RollbackStateSuccess" // rollback completed successfully
+RollbackStateFailed  RollbackState = "RollbackStateFailed"  // rollback failed
+```
+
+#### RollbackArgs
+
+Similar to `StepArgs`, you can pass additional arguments to rollback functions using the `RollbackArgs` field:
+
+```go
+step := gosteps.Step{
+  Name: "createResource",
+  Function: CreateResource,
+  RollbackFunction: CleanupResource,
+  RollbackArgs: map[string]interface{}{
+    "resourceId": "resource-123",
+    "cleanupType": "immediate",
+  },
+}
+```
+
+#### When Rollbacks Are Executed
+
+Rollbacks are automatically triggered when:
+- A step returns `StepStateFailed`
+- A step returns `StepStateError`
+- The step has a `RollbackFunction` defined
+
+Rollbacks are **not** executed for:
+- Steps that complete successfully (`StepStateComplete`)
+- Steps that are skipped (`StepStateSkipped`)
+- Steps that are pending retry (`StepStatePending`)
+- Steps without a `RollbackFunction` defined
+
+#### Rollback Execution Flow
+
+1. **Step Fails**: When a step execution fails, GoSteps checks if a rollback function is defined
+2. **Rollback Triggered**: If `RollbackFunction` is present, it's executed with the current context
+3. **Rollback Logged**: The rollback execution is logged with step name, state, and any messages/errors
+4. **Progress Tracked**: Rollback results are stored in the context's step progress tracking
+
+#### Example: Database Transaction with Rollback
+
+```go
+steps := gosteps.Steps{
+  {
+    Name: "beginTransaction",
+    Function: func(ctx gosteps.GoStepsCtx) gosteps.StepResult {
+      // Begin database transaction
+      tx := db.Begin()
+      ctx.SetData("transaction", tx)
+      return gosteps.MarkStateComplete()
+    },
+    RollbackFunction: func(ctx gosteps.GoStepsCtx) gosteps.RollbackResult {
+      // Rollback transaction if it exists
+      if tx := ctx.GetData("transaction"); tx != nil {
+        tx.(Database).Rollback()
+        message := "Transaction rolled back successfully"
+        return gosteps.RollbackResult{
+          RollbackState:   gosteps.RollbackStateSuccess,
+          RollbackMessage: &message,
+        }
+      }
+      return gosteps.RollbackResult{RollbackState: gosteps.RollbackStateSuccess}
+    },
+  },
+  {
+    Name: "updateUserData",
+    Function: func(ctx gosteps.GoStepsCtx) gosteps.StepResult {
+      tx := ctx.GetData("transaction").(Database)
+      if err := updateUser(tx, userData); err != nil {
+        return gosteps.MarkStateError().WithError(err)
+      }
+      return gosteps.MarkStateComplete()
+    },
+    RollbackFunction: func(ctx gosteps.GoStepsCtx) gosteps.RollbackResult {
+      // Specific cleanup for user data changes
+      message := "User data changes reverted"
+      return gosteps.RollbackResult{
+        RollbackState:   gosteps.RollbackStateSuccess,
+        RollbackMessage: &message,
+      }
+    },
+  },
+}
+
 ### Logging
 
 GoSteps uses the `[zerolog`](<https://github.com/rs/zerolog>) package to enable logging within GoSteps. Initialize the logger using the `gosteps.NewGoStepsLogger` method, passing the output type and options.
@@ -384,4 +550,11 @@ func(c gosteps.GoStepsCtx) gosteps.StepResult {
 
 ### Example
 
-Sample code can be found in the [example](./example/) directory.
+Sample code can be found in the [example](./example/) directory, which demonstrates step execution, retry logic, rollback functionality, and logging.
+
+For comprehensive usecase applications showcasing different GoSteps features including rollback mechanisms, see the [usecases](./example/usecases/) directory, which includes:
+- Data processing pipelines with cleanup rollbacks
+- E-commerce order processing with payment rollbacks  
+- CI/CD pipelines with deployment rollbacks
+- Microservice migration tools with state rollbacks
+- Cloud resource provisioning with cleanup rollbacks
